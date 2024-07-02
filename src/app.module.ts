@@ -38,6 +38,8 @@ import {
   ReferralRepository,
   BlockReferralPointsRepository,
   ReferralPointsRepository,
+  TvlProcessingRepository,
+  TxProcessingRepository,
   InvitesRepository,
   SeasonTotalPointRepository,
 } from "./repositories";
@@ -63,6 +65,8 @@ import {
   Point,
   BlockReferralPoints,
   ReferralPoints,
+  TvlProcessingStatus,
+  TxProcessingStatus,
   Invites,
   SeasonTotalPoint,
 } from "./entities";
@@ -78,13 +82,12 @@ import { AddressFirstDeposit } from "./entities/addressFirstDeposit.entity";
 import { BalanceOfLpRepository } from "./repositories";
 import { PointsOfLpRepository } from "./repositories";
 import { BlockAddressPointOfLpRepository, TxDataOfPointsRepository } from "./repositories";
-import { TvlPointService } from "./points/tvlPoint.service";
-import { TxVolPointService } from "./points/txVolPoint.service";
-import { TxNumPointService } from "./points/txNumPoint.service";
 import { BoosterService } from "./booster/booster.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RedistributeBalanceService } from "./points/redistributeBalance.service";
 import { DirectPointService } from "./points/directPoint.service";
+import { TvlPointService } from "./points/tvlPoint.service";
+import { TxPointService } from "./points/txPoint.service";
 
 @Module({
   imports: [
@@ -147,6 +150,8 @@ import { DirectPointService } from "./points/directPoint.service";
         UserWithdraw,
         BlockReferralPoints,
         ReferralPoints,
+        TvlProcessingStatus,
+        TxProcessingStatus,
         Invites,
         SeasonTotalPoint,
       ],
@@ -192,13 +197,10 @@ import { DirectPointService } from "./points/directPoint.service";
     PointsOfLpRepository,
     BlockAddressPointOfLpRepository,
     AdapterService,
-    TvlPointService,
     ProjectRepository,
     CacheRepository,
     BridgePointService,
     BoosterService,
-    TxVolPointService,
-    TxNumPointService,
     TxDataOfPointsRepository,
     BridgeActiveService,
     RedistributeBalanceService,
@@ -217,9 +219,13 @@ import { DirectPointService } from "./points/directPoint.service";
     ReferralPointService,
     BlockReferralPointsRepository,
     ReferralPointsRepository,
+    TvlProcessingRepository,
+    TxProcessingRepository,
+    TvlPointService,
+    TxPointService,
     SeasonTotalPointRepository,
     SeasonTotalPointService,
     InvitesRepository,
   ],
 })
-export class AppModule {}
+export class AppModule { }
