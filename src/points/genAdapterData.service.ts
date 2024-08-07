@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { promises as promisesFs, existsSync } from "fs";
 import { join } from "path";
 import { spawn } from "child_process";
@@ -63,7 +63,7 @@ export class GenAdapterDataService extends Worker {
     try {
       this.logger.log(`${GenAdapterDataService.name} initialized`);
       const dirs = await this.getAllDirectories();
-      const dirPromises = dirs.map(async (dir) => {
+      for (let dir of dirs) {
         try {
           const results = await Promise.allSettled([this.pipeTvlData(dir), this.pipeTxData(dir)]);
           results.forEach(result => {
@@ -74,8 +74,7 @@ export class GenAdapterDataService extends Worker {
         } catch (error) {
           this.logger.error(`Error processing directory ${dir}: ${error.stack}`);
         }
-      });
-      await Promise.all(dirPromises);
+      }
       this.logger.log(`${GenAdapterDataService.name} end`);
       await waitFor(() => !this.currentProcessPromise, 10000, 10000);
       if (!this.currentProcessPromise) {
@@ -105,23 +104,35 @@ export class GenAdapterDataService extends Worker {
   private async runCommand(command: string, cwd: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const [cmd, ...args] = command.split(' ');
-      const child = spawn(cmd, args, { cwd, shell: true });
+      const child = spawn(cmd, args, { cwd, shell: true, stdio: ['ignore', 'ignore', 'pipe'] });
 
       let stderr = '';
-
-      child.stdout.on('data', (_) => {});
 
       child.stderr.on('data', (data) => {
         stderr += data.toString();
       });
 
-      child.on('close', (code) => {
+      child.on('close', (code, signal) => {
         if (code === 0) {
           this.logger.log(`Command successfully: ${command}!`);
           resolve();
         } else {
-          const error = new Error(`Command failed: ${command} ${stderr}`);
+          const error = new Error(`Command failed: ${command}; code: ${code}; signal: ${signal}; err: ${stderr}`);
           reject(error);
+        }
+      });
+
+      child.on('exit', (code) => {
+        if (code !== 0) {
+          this.logger.error(`Process exited command ${command} with code: ${code}, forcing termination`);
+          child.kill();
+        }
+      });
+
+      child.on('disconnect', () => {
+        if (!child.killed) {
+          this.logger.warn(`Child process disconnected, forcing termination ${command}`);
+          child.kill();
         }
       });
 
@@ -164,7 +175,7 @@ export class GenAdapterDataService extends Worker {
     if (!this.tvlPaths.includes(dir)) return
 
     const pendingProcess = await this.tvlProcessingRepository.find({ where: { adapterProcessed: false, projectName: dir } });
-    if(pendingProcess.length === 0) return
+    if (pendingProcess.length === 0) return
 
     this.logger.log(`Start pipeTvlData ${dir} tvl data`)
     await Promise.all(pendingProcess.map(async status => {
@@ -202,7 +213,7 @@ export class GenAdapterDataService extends Worker {
     if (!this.txPaths.includes(dir)) return
 
     const pendingProcess = await this.txProcessingRepository.find({ where: { adapterProcessed: false, projectName: dir } });
-    if(pendingProcess.length === 0) return
+    if (pendingProcess.length === 0) return
 
     this.logger.log(`Start pipeTxData ${dir} tx data`)
     await Promise.all(pendingProcess.map(async status => {
