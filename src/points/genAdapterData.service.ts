@@ -120,6 +120,7 @@ export class GenAdapterDataService extends Worker {
           const error = new Error(`Command failed: ${command}; code: ${code}; signal: ${signal}; err: ${stderr}`);
           reject(error);
         }
+        child.removeAllListeners();
       });
 
       child.on('exit', (code) => {
@@ -134,9 +135,11 @@ export class GenAdapterDataService extends Worker {
           this.logger.warn(`Child process disconnected, forcing termination ${command}`);
           child.kill();
         }
+        child.removeAllListeners()
       });
 
       child.on('error', (err) => {
+        child.removeAllListeners()
         reject(err);
       });
     });
