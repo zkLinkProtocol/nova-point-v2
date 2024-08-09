@@ -89,7 +89,7 @@ export class RedistributePointService extends Worker {
         this.logger.error(`Error in RedistributePointService runLoop, ${error.stack}}`);
       }
 
-      await this.delay(2 * 60 * 1000);
+      await this.delay(20 * 60 * 1000);
     }
   }
 
