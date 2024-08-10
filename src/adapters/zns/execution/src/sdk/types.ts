@@ -1,10 +1,22 @@
-import { type TransactionResponse } from "ethers";
-
-export interface ContractInteraction {
-    transaction: TransactionResponse
-    method: string
-    value: bigint
-    timestamp: number
+export interface GraphResponse {
+    mintedDomains: Array<{
+        id: string
+        blockNumber: string
+        expiry: string
+        blockTimestamp: string
+        domainName: string
+        owner: string
+        transactionHash: string
+        tokenId: string
+    }>
+    renewedDomains: Array<{
+        id: string
+        blockNumber: string
+        expiry: string
+        blockTimestamp: string
+        transactionHash: string
+        tokenId: string
+    }>
 }
 
 export interface BlockData {

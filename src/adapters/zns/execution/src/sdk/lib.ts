@@ -1,206 +1,82 @@
-import { ContractInteraction, UserTxData } from "./types";
-import { JsonRpcProvider, Contract, EventLog } from "ethers";
+import { UserTxData } from "./types";
+import { JsonRpcProvider } from "ethers";
 import path from "path";
 require("dotenv").config({ path: path.join(__dirname, "../../.env") });
+import GraphQLHelper from "./graph";
+import { graphQuery } from "./constants";
 
-import RegistryABI from '../abis/Registry.json'
+export const queryUserTxData = async (startBlock: number, endBlock: number) => {
+    const contractAddress = "0xe0971a2B6E34bd060866081aE879630e83C4A0BD"
+    const rpcEndpoint = "https://rpc.zklink.io"
+    const graphUri = process.env.SUBGRAPH_ENDPOINT as string
 
-export default class ZNSNovaPointer {
-    contractAddress: string
-    provider: JsonRpcProvider
-    contract: Contract
+    const provider = new JsonRpcProvider(rpcEndpoint)
 
-    MAX_DOMAIN_LENGTH: number = 24
-    TLD = '.zkl'
+    let userTxCollection: UserTxData[] = [];
+    const pageSize = 1000;
+    let skip = 0;
+    let fetchNext = true;
 
-    mintEvents: Array<EventLog>
-    renewEvents: Array<EventLog>
-
-    /**
-     * 
-     * @param {String} rpcurl
-     * @param {String} contractAddress
-     */
-    constructor(rpcurl: string, contractAddress: string) {
-        this.contractAddress = contractAddress
-        this.provider = new JsonRpcProvider(rpcurl)
-        this.contract = new Contract(contractAddress, RegistryABI, this.provider)
-    }
-
-    /**
-     * initialize event list of MintdDomain and RenewedDomain events
-     */
-    initialize = async () => {
-        const mintEventFilters = this.contract.filters.MintedDomain()
-        const renewEventFilters = this.contract.filters.RenewedDomain()
-
-        this.mintEvents = await this.contract.queryFilter(mintEventFilters) as Array<EventLog>
-        this.renewEvents = await this.contract.queryFilter(renewEventFilters) as Array<EventLog>
-    }
-
-    /**
-     * Returns user's ZNS protocol interaction events by block number
-     * @param {Number} blockNumber 
-     * @returns {Promise<Array<UserTxData>>} userTxDataCollection
-     */
-    getZNSInteractionByBlock = async (blockNumber: number): Promise<Array<UserTxData>> => {
-        const block = await this.provider.getBlock(blockNumber)
-        if (block) {
-            const mintEvents = this.mintEvents.filter(event => event.blockNumber === blockNumber)
-            const renewEvents = this.renewEvents.filter(event => event.blockNumber === blockNumber)
-
-            // print block scsan result for mint and renew events
-            if(mintEvents.length === 0) {
-                console.log("\nNo mint event in this block ==>", blockNumber)
-            }
-            else {
-                console.log(`\n${mintEvents.length} mint events in this block ==> ${blockNumber}`)
-            }
-            if(renewEvents.length === 0) {
-                console.log("No renew event in this block ==>", blockNumber + "\n")
-            }
-            else {
-                console.log(`${renewEvents.length} renew events in this block ==> ${blockNumber}\n`)
-            }
-
-            const userTxDataCollection: Array<UserTxData> = []
-
-            // mint event process
-            for await (const event of mintEvents) {
+    while(fetchNext) {
+        const response = await GraphQLHelper.fetchGraphQLData(graphUri, graphQuery(startBlock, endBlock, pageSize, skip))
+        
+        // parse mint event
+        if(response.mintedDomains.length > 0) {
+            for await (const mint of response.mintedDomains) {
                 try {
-                    const transaction = await this.provider.getTransaction(event.transactionHash)
-                    const domainName: string = event.args[0]
-                    const tokenId = event.args[1]
-                    const owner = event.args[2]
-
-                    // domain => price process
-                    const tldIndex = domainName.lastIndexOf(this.TLD)
-                    const pureDomain = tldIndex === -1 ? domainName : domainName.substring(0, tldIndex) + domainName.substring(tldIndex + this.TLD.length)
-                    const domainLength = pureDomain.length
-                    const price = await this.contract.priceToRegister(domainLength)
-
-                    // expiry => quantity process
-                    const expiry = await this.contract.mintToExpire(tokenId)
-
-                    console.log({
-                        blockNumber,
-                        contractAddress: this.contractAddress,
+                    const transaction = await provider.getTransaction(mint.transactionHash)
+                    
+                    userTxCollection.push({
+                        blockNumber: Number(mint.blockNumber),
+                        contractAddress,
                         decimals: 0,
                         nonce: (transaction?.nonce || 0).toString(),
-                        price,
-                        quantity: expiry,
-                        timestamp: block?.timestamp,
+                        price: 0,
+                        quantity: BigInt(mint.expiry),
+                        timestamp: Number(mint.blockTimestamp),
                         tokenAddress: '',
-                        txHash: event.transactionHash,
-                        userAddress: owner
-                    })
-
-                    userTxDataCollection.push({
-                        blockNumber,
-                        contractAddress: this.contractAddress,
-                        decimals: 0,
-                        nonce: (transaction?.nonce || 0).toString(),
-                        price,
-                        quantity: expiry,
-                        timestamp: block?.timestamp,
-                        tokenAddress: '',
-                        txHash: event.transactionHash,
-                        userAddress: owner
+                        txHash: mint.transactionHash,
+                        userAddress: mint.owner
                     })
                 }
-                catch (error) {
-                    console.log(error)
+                catch {
                     continue
                 }
             }
+        }
 
-            // renew event process
-            for await (const event of renewEvents) {
+        // parse renew event
+        if(response.renewedDomains.length > 0) {
+            for await (const renew of response.renewedDomains) {
                 try {
-                    const transaction = await this.provider.getTransaction(event.transactionHash)
-                    const tokenId = event.args[0]
-                    const expiry = event.args[1]
-                    const owner = await this.contract.ownerOf(tokenId)
+                    const transaction = await provider.getTransaction(renew.transactionHash)
 
-                    // domain => price process
-                    const pureDomain = await this.contract.idToDomain(tokenId)
-                    const domainLength = pureDomain.length
-                    const price = await this.contract.priceToRegister(domainLength)
-
-                    console.log({
-                        blockNumber,
-                        contractAddress: this.contractAddress,
+                    userTxCollection.push({
+                        blockNumber: Number(renew.blockNumber),
+                        contractAddress,
                         decimals: 0,
                         nonce: (transaction?.nonce || 0).toString(),
-                        price,
-                        quantity: expiry,
-                        timestamp: block?.timestamp,
+                        price: 0,
+                        quantity: BigInt(renew.expiry),
+                        timestamp: Number(renew.blockTimestamp),
                         tokenAddress: '',
-                        txHash: event.transactionHash,
-                        userAddress: owner
-                    })
-
-                    userTxDataCollection.push({
-                        blockNumber,
-                        contractAddress: this.contractAddress,
-                        decimals: 0,
-                        nonce: (transaction?.nonce || 0).toString(),
-                        price,
-                        quantity: expiry,
-                        timestamp: block?.timestamp,
-                        tokenAddress: '',
-                        txHash: event.transactionHash,
-                        userAddress: owner
+                        txHash: renew.transactionHash,
+                        userAddress: transaction?.from || ''
                     })
                 }
-                catch (error) {
-                    console.log(error)
+                catch {
                     continue
                 }
             }
+        }
 
-            return userTxDataCollection
+        if(response.mintedDomains.length < pageSize && response.renewedDomains.length < pageSize) {
+            fetchNext = false
         }
         else {
-            return []
+            skip += pageSize;
         }
     }
 
-    /**
-     * Returns contract interaction transactions and details from block number
-     * @param {Number} blockNumber 
-     * @returns {Promise<Array<ContractInteraction>>} interactions
-     */
-    getContractCallTransactionsByBlock = async (blockNumber: number): Promise<Array<ContractInteraction>> => {
-        // get block from blockNumber
-        const block = await this.provider.getBlock(blockNumber)
-        const hashs = await block?.transactions || []
-        const interactions: Array<ContractInteraction> = []
-
-        // transaction hashs process
-        for await (const hash of hashs) {
-            try {
-                // get transaction data from hash
-                const transaction = await this.provider.getTransaction(hash)
-                if (!!transaction && transaction.to === this.contractAddress) {
-                    interactions.push({
-                        transaction,
-                        method: transaction.data.slice(0, 10),
-                        value: transaction.value,
-                        timestamp: block?.timestamp || 0
-                    })
-                }
-                else {
-                    // skip iteration if transaction is not ZNS contract call tranasction
-                    continue
-                }
-            }
-            catch {
-                // skip iteration if transaction is not exist for given hash
-                continue
-            }
-        }
-
-        return interactions
-    }
+    return userTxCollection
 }

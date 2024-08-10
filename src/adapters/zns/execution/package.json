@@ -14,6 +14,7 @@
   "author": "",
   "license": "UNLICENSED",
   "dependencies": {
+    "axios": "^1.7.3",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.2",
