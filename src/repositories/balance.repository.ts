@@ -4,19 +4,19 @@ import { BaseRepository } from "./base.repository";
 import { Balance } from "../entities";
 
 export const selectBalancesScript = `
-  SELECT * FROM balances 
-         JOIN 
+  SELECT * FROM balances
+         JOIN
        (
-         SELECT address, "tokenAddress", MAX("blockNumber") AS "blockNumber" 
-         FROM balances 
-         WHERE 
-         address = ANY($1) 
-         AND 
-         "tokenAddress" = ANY($2) 
-         GROUP BY address, "tokenAddress" 
-       ) AS latest_balances 
-       ON balances.address = latest_balances.address 
-         AND balances."tokenAddress" = latest_balances."tokenAddress" 
+         SELECT address, "tokenAddress", MAX("blockNumber") AS "blockNumber"
+         FROM balances
+         WHERE
+         address = ANY($1)
+         AND
+         "tokenAddress" = ANY($2)
+         GROUP BY address, "tokenAddress"
+       ) AS latest_balances
+       ON balances.address = latest_balances.address
+         AND balances."tokenAddress" = latest_balances."tokenAddress"
          AND balances."blockNumber" = latest_balances."blockNumber";
 `;
 
@@ -55,10 +55,11 @@ export class BalanceRepository extends BaseRepository<Balance> {
     });
   }
 
-  public async getAllAddressesByBlock(blockNumber: number): Promise<Buffer[]> {
+  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 20000): Promise<Buffer[]> {
+    const offset = page * limit;
     const transactionManager = this.unitOfWork.getTransactionManager();
     const result = await transactionManager.query(
-      `SELECT address FROM balances WHERE "blockNumber" <= $1 group by address;`,
+      `SELECT address FROM balances WHERE "blockNumber" <= $1 order by address asc limit ${limit} offset ${offset};`,
       [blockNumber]
     );
     return result.map((row: any) => row.address);
