@@ -89,11 +89,11 @@ Check this [example](../src/adapters/example)，
 Create your own adapter directory under the adapters folder, which consists of three parts.
 
 - **execution**: This directory houses the Node.js execution files for your adapter. It is a complete npm project, with a `package.json` to ensure correct installation of dependencies. The compilation output entry file is located in `dist/index.js`. It provides the necessary output functions `getUserTransactionData` and `getUserTVLData`. We will pass the a blockHeight as a parameter, execute your function, and write the results to a CSV file.
-- **subgraph**: We strongly recommend using a subgraph as the data source for **Execution** because it offers more transparent logic and data. We will review your code to ensure the data originates from the blockchain. If you choose to use a subgraph, please build it in this directory. Refer to the example, create your own subgraph, and you can use the npm script `npm run deploy-subgraph:dev -- -p <adapter-name> -name <subgraph-path>`to deploy your subgraph on dev environment.
+- **subgraph**: We strongly recommend using a subgraph as the data source for **Execution** because it offers more transparent logic and data. We will review your code to ensure the data originates from the blockchain. If you choose to use a subgraph, please build it in this directory. Refer to the example, create your own subgraph, and you can use the npm script `npm run deploy-subgraph:dev -- -p <adapter-name> -n <subgraph-path>`to deploy your subgraph on dev environment.
 
 ```bash
 # change 'example' and 'example-points' to your relevant names
-npm run deploy-subgraph:dev -- -p example -name example-points
+npm run deploy-subgraph:dev -- -p example -n example-points
 ```
 
 - **data**: You can refer to [example/data](../src/adapters/example/data). You don't need to create this data folder as it will be included in .gitignore. We just want to explain what the output CSV file looks like. It will be located in the data directory. We will input a block height as needed and execute the `getUserTransactionData` and `getUserTVLData` functions you expose in the `execution/dist` folder, finally outputting the CSV to the data folder.
