@@ -91,7 +91,7 @@ export class DirectPointService extends Worker {
           this.logger.error("Failed to calculate hold point", error.stack);
         }
       }
-      await waitFor(() => !this.currentProcessPromise, 10000, 10000);
+      await waitFor(() => !this.currentProcessPromise, 60000, 60000);
       if (!this.currentProcessPromise) {
         return;
       }
