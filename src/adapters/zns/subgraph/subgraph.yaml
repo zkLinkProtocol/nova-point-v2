@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: ZNSRegistry
-    network: bsc
+    network: zklink-nova
     source:
-      address: "0x7e2CF06F092c9F5cF5972eF021635b6c8E1C5bb2"
+      address: "0xe0971a2B6E34bd060866081aE879630e83C4A0BD"
       abi: ZNSRegistry
-      startBlock: 38316126
+      startBlock: 3977092
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

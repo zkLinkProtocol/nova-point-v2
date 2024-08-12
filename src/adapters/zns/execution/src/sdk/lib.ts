@@ -17,20 +17,20 @@ export const queryUserTxData = async (startBlock: number, endBlock: number) => {
     let skip = 0;
     let fetchNext = true;
 
-    while(fetchNext) {
+    while (fetchNext) {
         const response = await GraphQLHelper.fetchGraphQLData(graphUri, graphQuery(startBlock, endBlock, pageSize, skip))
-        
+
         // parse mint event
-        if(response.mintedDomains.length > 0) {
+        if (response.mintedDomains.length > 0) {
             for await (const mint of response.mintedDomains) {
                 try {
                     const transaction = await provider.getTransaction(mint.transactionHash)
-                    
+
                     userTxCollection.push({
                         blockNumber: Number(mint.blockNumber),
                         contractAddress,
                         decimals: 0,
-                        nonce: (transaction?.nonce || 0).toString(),
+                        nonce: (transaction?.nonce || 0).toString() + mint.tokenId,
                         price: 0,
                         quantity: BigInt(mint.expiry),
                         timestamp: Number(mint.blockTimestamp),
@@ -46,7 +46,7 @@ export const queryUserTxData = async (startBlock: number, endBlock: number) => {
         }
 
         // parse renew event
-        if(response.renewedDomains.length > 0) {
+        if (response.renewedDomains.length > 0) {
             for await (const renew of response.renewedDomains) {
                 try {
                     const transaction = await provider.getTransaction(renew.transactionHash)
@@ -55,7 +55,7 @@ export const queryUserTxData = async (startBlock: number, endBlock: number) => {
                         blockNumber: Number(renew.blockNumber),
                         contractAddress,
                         decimals: 0,
-                        nonce: (transaction?.nonce || 0).toString(),
+                        nonce: (transaction?.nonce || 0).toString() + renew.tokenId,
                         price: 0,
                         quantity: BigInt(renew.expiry),
                         timestamp: Number(renew.blockTimestamp),
@@ -70,7 +70,7 @@ export const queryUserTxData = async (startBlock: number, endBlock: number) => {
             }
         }
 
-        if(response.mintedDomains.length < pageSize && response.renewedDomains.length < pageSize) {
+        if (response.mintedDomains.length < pageSize && response.renewedDomains.length < pageSize) {
             fetchNext = false
         }
         else {
