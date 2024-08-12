@@ -1,18 +1,18 @@
 {
-  "name": "zk_l3_graph",
+  "name": "subgraph-example",
   "license": "UNLICENSED",
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "clean": "graph clean",
+    "deploy": "graph deploy --node https://api.studio.thegraph.com/deploy/ subgraph-example",
+    "create-local": "graph create --node http://localhost:8020/ subgraph-example",
+    "remove-local": "graph remove --node http://localhost:8020/ subgraph-example",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 subgraph-example",
     "test": "graph test"
   },
   "dependencies": {
-    "@graphprotocol/graph-cli": "0.68.5",
-    "@graphprotocol/graph-ts": "^0.32.0",
-    "prettier": "^3.2.5"
+    "@graphprotocol/graph-cli": "0.80.0",
+    "@graphprotocol/graph-ts": "0.32.0"
   },
-  "devDependencies": {
-    "matchstick-as": "0.5.0"
-  }
+  "devDependencies": { "matchstick-as": "0.5.0" }
 }
