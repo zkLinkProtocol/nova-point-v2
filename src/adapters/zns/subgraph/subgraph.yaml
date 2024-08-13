@@ -1,0 +1,62 @@
+specVersion: 1.0.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ZNSRegistry
+    network: zklink-nova
+    source:
+      address: "0xe0971a2B6E34bd060866081aE879630e83C4A0BD"
+      abi: ZNSRegistry
+      startBlock: 3977092
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Approval
+        - ApprovalForAll
+        - BatchMetadataUpdate
+        - MetadataUpdate
+        - MintedDomain
+        - Paused
+        - PrimaryDomainSet
+        - RenewedDomain
+        - RoleAdminChanged
+        - RoleGranted
+        - RoleRevoked
+        - Transfer
+        - Unpaused
+      abis:
+        - name: ZNSRegistry
+          file: ./abis/ZNSRegistry.json
+      eventHandlers:
+        - event: Approval(indexed address,indexed address,indexed uint256)
+          handler: handleApproval
+        - event: ApprovalForAll(indexed address,indexed address,bool)
+          handler: handleApprovalForAll
+        - event: BatchMetadataUpdate(uint256,uint256)
+          handler: handleBatchMetadataUpdate
+        - event: MetadataUpdate(uint256)
+          handler: handleMetadataUpdate
+        - event: MintedDomain(string,indexed uint256,indexed address,indexed uint256)
+          handler: handleMintedDomain
+        - event: Paused(address)
+          handler: handlePaused
+        - event: PrimaryDomainSet(indexed uint256,indexed address)
+          handler: handlePrimaryDomainSet
+        - event: RenewedDomain(indexed uint256,indexed uint256)
+          handler: handleRenewedDomain
+        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+          handler: handleRoleAdminChanged
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleRevoked
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
+        - event: Unpaused(address)
+          handler: handleUnpaused
+      file: ./src/zns-registry.ts
