@@ -8,7 +8,7 @@ require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 const getAllUserPosition = async (blockNumber: number) => {
   let result: UserTVLData[] = [];
   let skip = 0;
-  const pageSize = 1000;
+  const pageSize = 100;
   let fetchNext = true;
 
   while (fetchNext) {
