@@ -59,7 +59,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
     const offset = page * limit;
     const transactionManager = this.unitOfWork.getTransactionManager();
     const result = await transactionManager.query(
-      `SELECT address FROM balances WHERE "blockNumber" <= $1 order by address asc limit ${limit} offset ${offset};`,
+      `SELECT DISTINCT address FROM balances WHERE "blockNumber" <= $1 order by address asc limit ${limit} offset ${offset};`,
       [blockNumber]
     );
     return result.map((row: any) => row.address);
