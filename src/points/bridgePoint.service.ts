@@ -51,7 +51,7 @@ const USDT_USDC_ADDRESS = [
 ];
 const ETH_AMOUNT = BigInt((98 / 100) * 10 ** 17);
 const USDT_AMOUNT = BigInt((98 / 100) * 500 * 10 ** 6);
-const SMALL_ETH_AMOUNT = BigInt((98 / 100) * 5 ** 17);//0.05ETH
+const SMALL_ETH_AMOUNT = BigInt((98 / 100) * 2 ** 17);//0.02ETH
 const SMALL_USDT_AMOUNT = BigInt((98 / 100) * 100 * 10 ** 6);//100U
 const symbiosisNotEqualToAddress = [
   "0x2E818E50b913457015E1277B43E469b63AC5D3d7".toLocaleLowerCase(),
