@@ -160,8 +160,7 @@ export class DirectPointService extends Worker {
     const statisticEndTime = new Date();
     const statisticElapsedTime = statisticEndTime.getTime() - statisticStartTime.getTime();
     this.logger.log(
-      `Finish hold point statistic for block: ${currentStatisticalBlock.number}, elapsed time: ${
-        statisticElapsedTime / 1000
+      `Finish hold point statistic for block: ${currentStatisticalBlock.number}, elapsed time: ${statisticElapsedTime / 1000
       } seconds`
     );
   }
@@ -288,17 +287,22 @@ export class DirectPointService extends Worker {
       }
       item.stakePoint = Number(item.stakePoint) + Number(holdPoint);
     }
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       this.unitOfWork.useTransaction(async () => {
-        this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
-        await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
-        this.logger.log(`Finish directHolding point for block: ${blockNumber}, length: ${blockAddressPoints.length}`);
-        await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
-        this.logger.log(`Finish directHolding point for block: ${blockNumber}, length: ${newAddressPoints.length}`);
+        try {
+          this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
+          await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
+          this.logger.log(`Finish directHolding point for block: ${blockNumber}, length: ${blockAddressPoints.length}`);
+          await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
+          this.logger.log(`Finish directHolding point for block: ${blockNumber}, length: ${newAddressPoints.length}`);
 
-        await this.directHoldProcessingStatusRepository.upsertStatus({ blockNumber, pointProcessed: true });
-        this.logger.log(`Finish directHolding point statistic for block: ${blockNumber}`);
-        resolve();
+          await this.directHoldProcessingStatusRepository.upsertStatus({ blockNumber, pointProcessed: true });
+          this.logger.log(`Finish directHolding point statistic for block: ${blockNumber}`);
+          resolve();
+        } catch (error) {
+          this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
+          reject(error);
+        }
       });
     });
   }
