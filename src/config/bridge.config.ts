@@ -25,6 +25,33 @@ const defaultPointsRule = [
     points: 1,
   },
 ];
+const otherPointsRule = [
+  {
+    start: 0,
+    end: 200,
+    points: 1,
+  },
+  {
+    start: 201,
+    end: 400,
+    points: 1,
+  },
+  {
+    start: 401,
+    end: 600,
+    points: 1,
+  },
+  {
+    start: 601,
+    end: 800,
+    points: 1,
+  },
+  {
+    start: 801,
+    end: 0,
+    points: 1,
+  },
+];
 
 export default [
   {
@@ -56,5 +83,10 @@ export default [
       "0xd7aa9ba6caac7b0436c91396f22ca5a7f31664fc".toLocaleLowerCase(), // usdt
     ],
     pointsRule: defaultPointsRule,
+  },
+  {
+    id: "bunnyfi",
+    addresses: ["0x0000000000D310F8802cC91F198d14bC2303230B".toLocaleLowerCase()],
+    pointsRule: otherPointsRule,
   },
 ];

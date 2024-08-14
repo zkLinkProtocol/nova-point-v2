@@ -51,6 +51,8 @@ const USDT_USDC_ADDRESS = [
 ];
 const ETH_AMOUNT = BigInt((98 / 100) * 10 ** 17);
 const USDT_AMOUNT = BigInt((98 / 100) * 500 * 10 ** 6);
+const SMALL_ETH_AMOUNT = BigInt((98 / 100) * 5 ** 17);//0.05ETH
+const SMALL_USDT_AMOUNT = BigInt((98 / 100) * 100 * 10 ** 6);//100U
 const symbiosisNotEqualToAddress = [
   "0x2E818E50b913457015E1277B43E469b63AC5D3d7".toLocaleLowerCase(),
   "0x0000000000000000000000000000000000000000".toLocaleLowerCase(),
@@ -183,9 +185,14 @@ export class BridgePointService extends Worker {
     this.logger.log(`Fetch transfer list from blockNumber: ${this.lastTransferBlockNumber}`);
     let defalutBridgeAddress: string[] = [],
       symbiosisAddress: string[] = [];
+    let defalutethAmountLimit = ETH_AMOUNT,defalutusdtAmountLimit = USDT_AMOUNT;
     for (const item of BridgeConfig) {
       if (item.id == "owlet") {
         continue;
+      }
+      if (item.id == "bunnyfi") {
+        defalutethAmountLimit = SMALL_ETH_AMOUNT;
+        defalutusdtAmountLimit = SMALL_USDT_AMOUNT;
       }
       if (item.id == "symbiosis") {
         symbiosisAddress = item.addresses;
@@ -197,9 +204,9 @@ export class BridgePointService extends Worker {
       this.lastTransferBlockNumber,
       defalutBridgeAddress,
       ETH_ADDRESS,
-      ETH_AMOUNT,
+      defalutethAmountLimit,
       USDT_USDC_ADDRESS,
-      USDT_AMOUNT
+      defalutusdtAmountLimit
     );
     this.logger.log(
       `TransfersDb from blockNumber: ${this.lastTransferBlockNumber}, fetched ${transfersDb.length} transfers`
@@ -210,9 +217,9 @@ export class BridgePointService extends Worker {
       this.lastTransferBlockNumber,
       symbiosisAddress,
       ETH_ADDRESS,
-      ETH_AMOUNT,
+      defalutethAmountLimit,
       USDT_USDC_ADDRESS,
-      USDT_AMOUNT,
+      defalutusdtAmountLimit,
       symbiosisNotEqualToAddress,
       symbiosisBaseContractAddress
     );
