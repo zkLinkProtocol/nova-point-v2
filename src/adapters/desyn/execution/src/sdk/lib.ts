@@ -18,6 +18,7 @@ export async function getUserTVLData(blockNumber: number):Promise<UserTVLData[]>
       blockNumber: blockNumber,
       userAddress: item.userAddress,
       poolAddress: item.poolAddress,
+      lpAddress: item.lpAddress,
       tokenAddress: item.tokenAddress,
       balance: item.balance,
       timestamp: item.timestamp
