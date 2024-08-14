@@ -28,26 +28,6 @@ const defaultPointsRule = [
 const otherPointsRule = [
   {
     start: 0,
-    end: 200,
-    points: 1,
-  },
-  {
-    start: 201,
-    end: 400,
-    points: 1,
-  },
-  {
-    start: 401,
-    end: 600,
-    points: 1,
-  },
-  {
-    start: 601,
-    end: 800,
-    points: 1,
-  },
-  {
-    start: 801,
     end: 0,
     points: 1,
   },
