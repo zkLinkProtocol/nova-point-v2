@@ -8,7 +8,7 @@ export const getTimestampAtBlock = async (blockNumber: number) => {
   return Number(block?.timestamp);
 };
   
-export async function getUserTVLData(blockNumber: number):Promise<UserTVLData[]>  {
+export async function getUserTransactionData(blockNumber: number):Promise<UserTVLData[]>  {
 
   const response = (await axios.get("https://api.desyn.io/zklink/points_gateway/points/get_zklink_balance_list?blockNumber=" + blockNumber));
   const data = response.data.list;
