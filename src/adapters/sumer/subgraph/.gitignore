@@ -4,9 +4,7 @@ src/types/
 .DS_STORE
 yarn-error.log
 .idea/
-generated/
 tmp
 tests/.latest.json
 tests/.bin
-subgraph.yaml
 config/index.ts

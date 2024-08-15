@@ -9,7 +9,7 @@ import {
   AccrueInterest,
   NewReserveFactor,
   NewMarketInterestRateModel,
-} from "../types/templates/CToken/CToken";
+} from "../../generated/templates/CToken/CToken";
 import {
   Market,
   Account,
@@ -20,7 +20,7 @@ import {
   BorrowEvent,
   RepayEvent,
   RedeemFaceValueEvent,
-} from "../types/schema";
+} from "../../generated/schema";
 import { createMarket, updateMarket } from "./markets";
 import {
   createAccount,
@@ -30,7 +30,7 @@ import {
   mantissaFactorBD,
   saveRatePerBlock,
 } from "./helpers";
-import { RedeemFaceValue } from "../types/Comptroller/CToken";
+import { RedeemFaceValue } from "../../generated/Comptroller/CToken";
 import { BigInt } from "../../node_modules/@graphprotocol/graph-ts/index";
 
 /* Account supplies assets into market and receives cTokens in exchange

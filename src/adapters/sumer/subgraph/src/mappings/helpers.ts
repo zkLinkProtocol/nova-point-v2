@@ -7,8 +7,8 @@ import {
   Account,
   AccountCTokenTransaction,
   RatePerBlock
-} from "../types/schema";
-import { CToken } from "../types/templates/CToken/CToken";
+} from "../../generated/schema";
+import { CToken } from "../../generated/templates/CToken/CToken";
 
 export function exponentToBigDecimal(decimals: number): BigDecimal {
   let bd = BigDecimal.fromString("1");

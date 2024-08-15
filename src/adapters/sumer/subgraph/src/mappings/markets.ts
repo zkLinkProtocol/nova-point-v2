@@ -2,10 +2,10 @@
 
 // For each division by 10, add one to exponent to truncate one significant figure
 import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts";
-import { Market, Comptroller } from "../types/schema";
-import { PriceOracle } from "../types/templates/CToken/PriceOracle";
-import { BEP20 } from "../types/templates/CToken/BEP20";
-import { CToken } from "../types/templates/CToken/CToken";
+import { Market, Comptroller } from "../../generated/schema";
+import { PriceOracle } from "../../generated/templates/CToken/PriceOracle";
+import { BEP20 } from "../../generated/templates/CToken/BEP20";
+import { CToken } from "../../generated/templates/CToken/CToken";
 
 import {
   exponentToBigDecimal,

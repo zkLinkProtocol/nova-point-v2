@@ -9,9 +9,9 @@ import {
   // NewMaxAssets,
   NewPriceOracle,
   MarketListed,
-} from "../types/Comptroller/Comptroller";
-import { CToken } from "../types/templates";
-import { Market, Comptroller, Account } from "../types/schema";
+} from "../../generated/Comptroller/Comptroller";
+import { CToken } from "../../generated/templates";
+import { Market, Comptroller, Account } from "../../generated/schema";
 import {
   mantissaFactorBD,
   updateCommonCTokenStats,
