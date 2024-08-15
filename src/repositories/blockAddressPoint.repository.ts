@@ -49,7 +49,6 @@ export class BlockAddressPointRepository extends BaseRepository<BlockAddressPoin
   ): Promise<
     {
       address: string;
-      pairAddress: string;
       totalPoint: number;
     }[]
   > {
@@ -63,5 +62,13 @@ export class BlockAddressPointRepository extends BaseRepository<BlockAddressPoin
         totalPoint: item.totalPoint,
       };
     });
+  }
+
+  public async getAllAddress(blockNumber: number): Promise<string[]> {
+    const transactionManager = this.unitOfWork.getTransactionManager();
+    const result = await transactionManager.query(
+      `SELECT DISTINCT address FROM "blockAddressPoint" WHERE "blockNumber"=${blockNumber};`
+    );
+    return result.map((row: any) => "0x" + row.address.toString("hex"));
   }
 }
