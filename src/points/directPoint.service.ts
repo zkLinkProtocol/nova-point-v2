@@ -179,13 +179,16 @@ export class DirectPointService extends Worker {
     page = 0
   ): Promise<Map<string, BlockAddressTvl>> {
     const addressTvlMap: Map<string, BlockAddressTvl> = new Map();
-    const addressBufferList = await this.balanceRepository.getAllAddressesByBlock(blockNumber, page);
-    if (addressBufferList.length == 0) {
+    const addressList = await this.balanceRepository.getAllAddressesByBlock(blockNumber, page);
+    if (addressList.length == 0) {
       return addressTvlMap;
     }
-    this.logger.log(`The address list length: ${addressBufferList.length}`);
-    for (const addressBuffer of addressBufferList) {
-      const address = hexTransformer.from(addressBuffer);
+    const existAddressList = await this.blockAddressPointRepository.getAllAddress(blockNumber);
+    this.logger.log(`The address list length: ${addressList.length}`);
+    for (const address of addressList) {
+      if (existAddressList.includes(address)) {
+        continue;
+      }
       const addressTvl = await this.calculateAddressTvl(address, blockNumber, tokenPriceMap, blockTs);
       // if (addressTvl.tvl.gt(new BigNumber(0))) {
       //   this.logger.log(`Address ${address}: [tvl: ${addressTvl.tvl}, holdBasePoint: ${addressTvl.holdBasePoint}]`);
