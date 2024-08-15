@@ -55,14 +55,14 @@ export class BalanceRepository extends BaseRepository<Balance> {
     });
   }
 
-  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 20000): Promise<Buffer[]> {
+  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 40000): Promise<string[]> {
     const offset = page * limit;
     const transactionManager = this.unitOfWork.getTransactionManager();
     const result = await transactionManager.query(
-      `SELECT address FROM balances WHERE "blockNumber" <= $1 order by address asc limit ${limit} offset ${offset};`,
+      `SELECT DISTINCT address FROM balances WHERE "blockNumber" <= $1 order by address asc limit ${limit} offset ${offset};`,
       [blockNumber]
     );
-    return result.map((row: any) => row.address);
+    return result.map((row: any) => "0x" + row.address.toString("hex"));
   }
 
   public async getAllAddresses(): Promise<Buffer[]> {
