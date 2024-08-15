@@ -76,6 +76,19 @@ export class BalanceRepository extends BaseRepository<Balance> {
     return await transactionManager.query(selectBalancesScript, [address]);
   }
 
+  public async getAllAccountBalancesByBlock(addresses: String[], blockNumber: number): Promise<Balance[]> {
+    const transactionManager = this.unitOfWork.getTransactionManager();
+    const addressesBuff = addresses.map((item) => Buffer.from(item.substring(2), "hex"));
+    return await transactionManager
+      .getRepository(Balance)
+      .createQueryBuilder("balance")
+      .where("balance.blockNumber = :blockNumber and balance.address = ANY(:addresses)", {
+        blockNumber,
+        addresses: addressesBuff,
+      })
+      .getMany();
+  }
+
   public async getAccountBalancesByBlock(address: Buffer, blockNumber: number): Promise<Balance[]> {
     const transactionManager = this.unitOfWork.getTransactionManager();
     return await transactionManager.query(selectBalancesByBlockScript, [address, blockNumber]);
