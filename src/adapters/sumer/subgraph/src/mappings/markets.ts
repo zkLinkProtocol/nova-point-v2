@@ -63,7 +63,7 @@ export function createMarket(
   );
   if (marketAddress == CNativeAddr) {
     market = new Market(marketAddress);
-    market.underlyingAddress = Address.fromString(marketAddress);
+    market.underlyingAddress = contract.underlying();
     market.underlyingDecimals = BigInt.fromI32(18);
     market.underlyingName = "Ether";
     market.underlyingSymbol = "ETH";

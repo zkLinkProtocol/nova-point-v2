@@ -23,9 +23,9 @@ const getAllUserPosition = async (blockNumber: number) => {
           market {
             id
             decimals
-            exchangeRate
+            totalSupply
+            cash
             underlyingAddress
-            underlyingSymbol
           }
           account {
             id
@@ -41,16 +41,14 @@ const getAllUserPosition = async (blockNumber: number) => {
     
     const res = accountCTokens.map((data) => {
       const userAddress = data.account.id;
-      const poolAddress = data.market.id;
-      const tokenAddress = data.market.underlyingAddress;
-      // const symbol = data.market.underlyingSymbol;
-      const balance = new BigNumber(data.cTokenBalance).times(`1e${data.market.decimals}`).times(data.market.exchangeRate).toFixed(0)
-
+      const cTokenBalance = data.cTokenBalance;
+      const { id, underlyingAddress, decimals, totalSupply, cash } = data.market;
+      const balance = new BigNumber(cTokenBalance).div(totalSupply).times(cash).times(`1e${decimals}`).toFixed()
 
       return {
         userAddress,
-        poolAddress,
-        tokenAddress,
+        poolAddress: id,
+        tokenAddress: underlyingAddress,
         blockNumber,
         balance: BigInt(balance),
         timestamp

@@ -31,9 +31,9 @@ export type Response = {
         market: {
             id: string;
             decimals: string;
-            exchangeRate: string;
+            totalSupply: string;
+            cash: string;
             underlyingAddress: string;
-            underlyingSymbol: string;
         },
         account: {
             id: string
