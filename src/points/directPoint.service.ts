@@ -205,7 +205,8 @@ export class DirectPointService extends Worker {
   ): Promise<Map<string, BlockAddressTvl>> {
     const addressTvlMap: Map<string, BlockAddressTvl> = new Map();
     const existAddressList = await this.blockAddressPointRepository.getAllAddress(blockNumber);
-    const finalAddressList = addressList.filter((value) => !existAddressList.includes(value));
+    const existAddressListSet = new Set(existAddressList);
+    const finalAddressList = addressList.filter((value) => !existAddressListSet.has(value));
     for (const address of finalAddressList) {
       const addressBalancesTmp = addressBalancesMap.get(address);
       if (!addressBalancesTmp || addressBalancesTmp.length == 0) {
