@@ -263,11 +263,13 @@ export class GenAdapterDataService extends Worker {
     const pairAddresses = rows.map(i => i.pairAddress);
     const uniquePairAddresses = [...new Set(pairAddresses)]
     await this.projectRepository.addManyIgnoreConflicts(uniquePairAddresses.map(item => ({ pairAddress: item, name: projectName })))
+    this.logger.log(`updateTvlProjects ${projectName} into table ${uniquePairAddresses}`)
   }
 
   private updateTxProjects = async (rows: Awaited<ReturnType<typeof this.insertTXDataToDb>>, projectName: string) => {
     const pairAddresses = rows.map(i => i.contractAddress);
     const uniquePairAddresses = pairAddresses
     await this.projectRepository.addManyIgnoreConflicts(uniquePairAddresses.map(item => ({ pairAddress: item, name: projectName })))
+    this.logger.log(`updateTxProjects ${projectName} into table ${uniquePairAddresses}`)
   }
 }

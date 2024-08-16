@@ -34,7 +34,7 @@ export const queryUserTxData = async (startBlock: number, endBlock: number) => {
                         price: 0,
                         quantity: BigInt(mint.expiry),
                         timestamp: Number(mint.blockTimestamp),
-                        tokenAddress: '',
+                        tokenAddress: contractAddress, // nft do not have tokenAddress, set it as contractAddress
                         txHash: mint.transactionHash,
                         userAddress: mint.owner
                     })
