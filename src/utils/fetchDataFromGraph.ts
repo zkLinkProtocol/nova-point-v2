@@ -6,13 +6,14 @@ export const fetchGraphQLData = async <T>(url: string, query: string): Promise<T
     let retry = true;
     let retryCount = 0;
     const maxRetries = 10;
-
+    const timeoutSignal = AbortSignal.timeout(10000);
     while (retry && retryCount < maxRetries) {
         try {
             const response = await fetch(url, {
                 method: "POST",
                 body: JSON.stringify({ query }),
                 headers: { "Content-Type": "application/json" },
+                signal: AbortSignal.any([timeoutSignal]),
             });
             ({ data, errors } = await response.json());
 
