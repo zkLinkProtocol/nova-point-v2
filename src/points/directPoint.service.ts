@@ -18,6 +18,7 @@ import { BaseDataService, getETHPrice, getTokenPrice, STABLE_COIN_TYPE } from ".
 import addressMultipliers from "../config/addressMultipliers";
 import waitFor from "src/utils/waitFor";
 import { LrtUnitOfWork } from "src/unitOfWork";
+import { Balance } from "src/entities";
 
 export const LOYALTY_BOOSTER_FACTOR: BigNumber = new BigNumber(0.005);
 type BlockAddressTvl = {
@@ -108,9 +109,20 @@ export class DirectPointService extends Worker {
 
     const statisticStartTime = new Date();
     const earlyBirdMultiplier = this.getEarlyBirdMultiplier(currentStatisticalBlock.timestamp);
-    this.logger.log(`Early bird multiplier: ${earlyBirdMultiplier}`);
+    this.logger.log(`blockNumber:${currentStatisticalBlock.number}, Early bird multiplier: ${earlyBirdMultiplier}`);
     const tokenPriceMap = await this.getTokenPriceMap(currentStatisticalBlock.number);
     const blockTs = currentStatisticalBlock.timestamp.getTime();
+
+    const addressBalances = await this.balanceRepository.getAllAccountBalancesByBlock(currentStatisticalBlock.number);
+    const addressBalancesMap: Map<string, Balance[]> = new Map();
+    for (const item of addressBalances) {
+      const address = item.address;
+      if (addressBalancesMap.has(address)) {
+        addressBalancesMap.get(address).push(item);
+      } else {
+        addressBalancesMap.set(address, [item]);
+      }
+    }
     let page = 0;
     while (true) {
       const addressHoldPoints: {
@@ -118,29 +130,37 @@ export class DirectPointService extends Worker {
         holdPoint: number;
         blockNumber: number;
       }[] = [];
-      const addressTvlMap = await this.getAddressTvlMap(currentStatisticalBlock.number, blockTs, tokenPriceMap, page);
-      if (addressTvlMap.size == 0) {
+
+      const addressList = await this.getAddressPaging(currentStatisticalBlock.number, page);
+      if (addressList.length == 0) {
+        this.logger.error(`blockNumber:${currentStatisticalBlock.number}, page:${page}, addressList is empty`);
         break;
+      }
+      const addressTvlMap = await this.getAddressTvlMap(
+        currentStatisticalBlock.number,
+        blockTs,
+        tokenPriceMap,
+        addressList,
+        addressBalancesMap
+      );
+      if (addressTvlMap.size == 0) {
+        page++;
+        continue;
       }
       const addresses = Array.from(addressTvlMap.keys());
       this.logger.log(
         `Start loop address, blockNumber:${currentStatisticalBlock.number}, address count: ${addresses.length}`
       );
+      // get all first deposit time
+      const addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
       for (const address of addresses) {
         const addressTvl = addressTvlMap.get(address);
         const addressMultiplier = this.getAddressMultiplier(address, blockTs);
 
-        let firstDepositTime = this.addressFirstDepositTimeCache.get(address);
-        if (!firstDepositTime) {
-          const addressFirstDeposit = await this.addressFirstDepositRepository.getAddressFirstDeposit(address);
-          firstDepositTime = addressFirstDeposit?.firstDepositTime;
-          if (firstDepositTime) {
-            const depositTime = new Date(Math.max(firstDepositTime.getTime(), this.pointsPhase1StartTime.getTime()));
-            this.addressFirstDepositTimeCache.set(address, depositTime);
-          }
-        }
+        // get the last multiplier before the block timestamp
+        const addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
         let groupBooster = new BigNumber(1);
-        const loyaltyBooster = this.getLoyaltyBooster(blockTs, firstDepositTime?.getTime());
+        const loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
         // NOVA Point = sum_all tokens in activity list (Early_Bird_Multiplier * Token Multiplier * Address Multiplier * Token Amount * Token Price * (1 + Group Booster + Growth Booster) * Loyalty Booster / ETH_Price )
         const newHoldPoint = addressTvl.holdBasePoint
           .multipliedBy(earlyBirdMultiplier)
@@ -172,29 +192,34 @@ export class DirectPointService extends Worker {
     );
   }
 
+  async getAddressPaging(blockNumber: number, page = 0): Promise<string[]> {
+    return await this.balanceRepository.getAllAddressesByBlock(blockNumber, page);
+  }
+
   async getAddressTvlMap(
     blockNumber: number,
     blockTs: number,
     tokenPriceMap: Map<string, BigNumber>,
-    page = 0
+    addressList: string[],
+    addressBalancesMap: Map<string, Balance[]>
   ): Promise<Map<string, BlockAddressTvl>> {
     const addressTvlMap: Map<string, BlockAddressTvl> = new Map();
-    const addressList = await this.balanceRepository.getAllAddressesByBlock(blockNumber, page);
-    if (addressList.length == 0) {
-      return addressTvlMap;
-    }
     const existAddressList = await this.blockAddressPointRepository.getAllAddress(blockNumber);
-    this.logger.log(`The address list length: ${addressList.length}`);
-    for (const address of addressList) {
-      if (existAddressList.includes(address)) {
+    const finalAddressList = addressList.filter((value) => !existAddressList.includes(value));
+    for (const address of finalAddressList) {
+      const addressBalancesTmp = addressBalancesMap.get(address);
+      if (!addressBalancesTmp || addressBalancesTmp.length == 0) {
         continue;
       }
-      const addressTvl = await this.calculateAddressTvl(address, blockNumber, tokenPriceMap, blockTs);
+      const addressTvl = await this.calculateAddressTvl(tokenPriceMap, blockTs, addressBalancesTmp);
       // if (addressTvl.tvl.gt(new BigNumber(0))) {
       //   this.logger.log(`Address ${address}: [tvl: ${addressTvl.tvl}, holdBasePoint: ${addressTvl.holdBasePoint}]`);
       // }
       addressTvlMap.set(address, addressTvl);
     }
+    this.logger.log(
+      `The address list length: ${addressList.length}, the final address length: ${finalAddressList.length}， addressTvlMap length: ${addressTvlMap.size}`
+    );
     return addressTvlMap;
   }
 
@@ -213,18 +238,15 @@ export class DirectPointService extends Worker {
   }
 
   async calculateAddressTvl(
-    address: string,
-    blockNumber: number,
     tokenPrices: Map<string, BigNumber>,
-    blockTs: number
+    blockTs: number,
+    addressBalances: Balance[]
   ): Promise<BlockAddressTvl> {
-    const addressBuffer: Buffer = hexTransformer.to(address);
-    const addressBalances = await this.balanceRepository.getAccountBalancesByBlock(addressBuffer, blockNumber);
     let tvl: BigNumber = new BigNumber(0);
     let holdBasePoint: BigNumber = new BigNumber(0);
     for (const addressBalance of addressBalances) {
       // filter not support token
-      const tokenAddress: string = hexTransformer.from(addressBalance.tokenAddress);
+      const tokenAddress: string = addressBalance.tokenAddress;
       const tokenInfo = this.tokenService.getSupportToken(tokenAddress);
       if (!tokenInfo) {
         continue;

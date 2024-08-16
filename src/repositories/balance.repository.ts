@@ -27,7 +27,7 @@ export const selectBalancesByBlockScript = `
        (
          SELECT address, "tokenAddress", MAX("blockNumber") AS "blockNumber"
          FROM balances
-         WHERE address = $1 AND "blockNumber" <= $2
+         WHERE "blockNumber" <= $1
          GROUP BY address, "tokenAddress"
        ) AS latest_balances
        ON balances.address = latest_balances.address
@@ -55,7 +55,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
     });
   }
 
-  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 40000): Promise<string[]> {
+  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 20000): Promise<string[]> {
     const offset = page * limit;
     const transactionManager = this.unitOfWork.getTransactionManager();
     const result = await transactionManager.query(
@@ -76,9 +76,16 @@ export class BalanceRepository extends BaseRepository<Balance> {
     return await transactionManager.query(selectBalancesScript, [address]);
   }
 
-  public async getAccountBalancesByBlock(address: Buffer, blockNumber: number): Promise<Balance[]> {
+  public async getAllAccountBalancesByBlock(blockNumber: number): Promise<Balance[]> {
     const transactionManager = this.unitOfWork.getTransactionManager();
-    return await transactionManager.query(selectBalancesByBlockScript, [address, blockNumber]);
+    const result = await transactionManager.query(selectBalancesByBlockScript, [blockNumber]);
+    return result.map((item) => {
+      return {
+        ...item,
+        address: "0x" + item.address.toString("hex"),
+        tokenAddress: "0x" + item.tokenAddress.toString("hex"),
+      };
+    });
   }
 
   public async getLatesBlockNumber(): Promise<number> {
