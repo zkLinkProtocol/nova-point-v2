@@ -59,7 +59,7 @@ export const queryUserTxData = async (startBlock: number, endBlock: number) => {
                         price: 0,
                         quantity: BigInt(renew.expiry),
                         timestamp: Number(renew.blockTimestamp),
-                        tokenAddress: '',
+                        tokenAddress: contractAddress, // nft do not have tokenAddress, set it as contractAddress
                         txHash: renew.transactionHash,
                         userAddress: transaction?.from || ''
                     })
