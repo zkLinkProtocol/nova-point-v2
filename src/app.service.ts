@@ -36,7 +36,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async onModuleInit() {
-    await this.genAdapterDataService.initAllDirectory()
+    await this.genAdapterDataService.initAllDirectory();
     // example:
     // await this.adapterService.runProcess();
     // second params is utc+8
@@ -68,7 +68,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       this.calTvlPointService.start(),
       this.calTxPointService.start(),
       this.seasonTotalPointService.start(),
-      // this.directPointService.start(),
+      this.directPointService.start(),
     ]);
   }
 
@@ -85,5 +85,5 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     ]);
   }
 
-  private async compensatePoints() { }
+  private async compensatePoints() {}
 }
