@@ -109,9 +109,20 @@ export class DirectPointService extends Worker {
 
     const statisticStartTime = new Date();
     const earlyBirdMultiplier = this.getEarlyBirdMultiplier(currentStatisticalBlock.timestamp);
-    this.logger.log(`Early bird multiplier: ${earlyBirdMultiplier}`);
+    this.logger.log(`blockNumber:${currentStatisticalBlock.number}, Early bird multiplier: ${earlyBirdMultiplier}`);
     const tokenPriceMap = await this.getTokenPriceMap(currentStatisticalBlock.number);
     const blockTs = currentStatisticalBlock.timestamp.getTime();
+
+    const addressBalances = await this.balanceRepository.getAllAccountBalancesByBlock(currentStatisticalBlock.number);
+    const addressBalancesMap: Map<string, Balance[]> = new Map();
+    for (const item of addressBalances) {
+      const address = item.address;
+      if (addressBalancesMap.has(address)) {
+        addressBalancesMap.get(address).push(item);
+      } else {
+        addressBalancesMap.set(address, [item]);
+      }
+    }
     let page = 0;
     while (true) {
       const addressHoldPoints: {
@@ -129,7 +140,8 @@ export class DirectPointService extends Worker {
         currentStatisticalBlock.number,
         blockTs,
         tokenPriceMap,
-        addressList
+        addressList,
+        addressBalancesMap
       );
       if (addressTvlMap.size == 0) {
         page++;
@@ -188,41 +200,26 @@ export class DirectPointService extends Worker {
     blockNumber: number,
     blockTs: number,
     tokenPriceMap: Map<string, BigNumber>,
-    addressList: string[]
+    addressList: string[],
+    addressBalancesMap: Map<string, Balance[]>
   ): Promise<Map<string, BlockAddressTvl>> {
     const addressTvlMap: Map<string, BlockAddressTvl> = new Map();
     const existAddressList = await this.blockAddressPointRepository.getAllAddress(blockNumber);
     const finalAddressList = addressList.filter((value) => !existAddressList.includes(value));
-    const addressBalances = await this.balanceRepository.getAllAccountBalancesByBlock(finalAddressList, blockNumber);
-    const addressBalancesMap: Map<string, Balance[]> = new Map();
-    for (const item of addressBalances) {
-      const address = item.address;
-      if (addressBalancesMap.has(address)) {
-        addressBalancesMap.get(address).push(item);
-      } else {
-        addressBalancesMap.set(address, [item]);
-      }
-    }
-    this.logger.log(
-      `The address list length: ${addressList.length}, the final address length: ${finalAddressList.length}`
-    );
     for (const address of finalAddressList) {
       const addressBalancesTmp = addressBalancesMap.get(address);
       if (!addressBalancesTmp || addressBalancesTmp.length == 0) {
         continue;
       }
-      const addressTvl = await this.calculateAddressTvl(
-        // address,
-        // blockNumber,
-        tokenPriceMap,
-        blockTs,
-        addressBalancesTmp
-      );
+      const addressTvl = await this.calculateAddressTvl(tokenPriceMap, blockTs, addressBalancesTmp);
       // if (addressTvl.tvl.gt(new BigNumber(0))) {
       //   this.logger.log(`Address ${address}: [tvl: ${addressTvl.tvl}, holdBasePoint: ${addressTvl.holdBasePoint}]`);
       // }
       addressTvlMap.set(address, addressTvl);
     }
+    this.logger.log(
+      `The address list length: ${addressList.length}, the final address length: ${finalAddressList.length}， addressTvlMap length: ${addressTvlMap.size}`
+    );
     return addressTvlMap;
   }
 
@@ -241,14 +238,10 @@ export class DirectPointService extends Worker {
   }
 
   async calculateAddressTvl(
-    // address: string,
-    // blockNumber: number,
     tokenPrices: Map<string, BigNumber>,
     blockTs: number,
     addressBalances: Balance[]
   ): Promise<BlockAddressTvl> {
-    // const addressBuffer: Buffer = hexTransformer.to(address);
-    // const addressBalances = await this.balanceRepository.getAccountBalancesByBlock(addressBuffer, blockNumber);
     let tvl: BigNumber = new BigNumber(0);
     let holdBasePoint: BigNumber = new BigNumber(0);
     for (const addressBalance of addressBalances) {
