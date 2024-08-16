@@ -5,5 +5,6 @@ export type UserTVLData = {
     tokenAddress: string
     blockNumber: number
     balance: bigint
+    decimals: string
     timestamp: number
 }

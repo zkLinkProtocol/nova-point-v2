@@ -21,6 +21,7 @@ export async function getUserTransactionData(blockNumber: number):Promise<UserTV
       lpAddress: item.lpAddress,
       tokenAddress: item.tokenAddress,
       balance: item.balance,
+      decimals: item.decimals,
       timestamp: item.timestamp
     };
   });
