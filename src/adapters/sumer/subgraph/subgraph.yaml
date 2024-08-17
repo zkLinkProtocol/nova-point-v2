@@ -1,0 +1,85 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: Comptroller
+    network: zklink-nova
+    source:
+      address: '0xe6099D924efEf37845867D45E3362731EaF8A98D'
+      abi: Comptroller
+      startBlock: 5061278 
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/comptroller.ts
+      entities:
+        - Comptroller
+        - Market
+      abis:
+        - name: Comptroller
+          file: ./abis/comptroller.json
+        - name: CToken
+          file: ./abis/ctoken.json
+        - name: PriceOracle
+          file: ./abis/priceOracle.json
+        - name: BEP20
+          file: ./abis/bep20.json
+      eventHandlers:
+        - event: MarketListed(address)
+          handler: handleMarketListed
+        - event: MarketEntered(address,address)
+          handler: handleMarketEntered
+        - event: MarketExited(address,address)
+          handler: handleMarketExited
+        - event: NewCloseFactor(uint256,uint256)
+          handler: handleNewCloseFactor
+        - event: NewLiquidationIncentive(uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleNewLiquidationIncentive
+        - event: NewPriceOracle(address,address)
+          handler: handleNewPriceOracle
+ 
+templates:
+  - name: CToken
+    kind: ethereum/contract
+    network: zklink-nova
+    source:
+      abi: CToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/ctoken.ts
+      entities:
+        - User
+        - Market
+        - CTokenInfo
+      abis:
+        - name: CToken
+          file: ./abis/ctoken.json
+        - name: PriceOracle
+          file: ./abis/priceOracle.json
+        - name: BEP20
+          file: ./abis/bep20.json
+      eventHandlers:
+        - event: Mint(address,uint256,uint256)
+          handler: handleMint
+        - event: Redeem(address,uint256,uint256)
+          handler: handleRedeem
+        - event: Borrow(address,uint256,uint256,uint256)
+          handler: handleBorrow
+        - event: RepayBorrow(address,address,uint256,uint256,uint256)
+          handler: handleRepayBorrow
+        - event: LiquidateBorrow(address,address,uint256,address,uint256)
+          handler: handleLiquidateBorrow
+        - event: AccrueInterest(uint256,uint256,uint256,uint256)
+          handler: handleAccrueInterest
+        - event: NewReserveFactor(uint256,uint256)
+          handler: handleNewReserveFactor
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: NewMarketInterestRateModel(address,address)
+          handler: handleNewMarketInterestRateModel
+        - event: RedeemFaceValue(indexed address,indexed address,uint256,address,uint256,uint256)
+          handler: handleRedeemFaceValue

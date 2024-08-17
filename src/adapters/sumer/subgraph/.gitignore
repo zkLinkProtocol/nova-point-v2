@@ -1,0 +1,10 @@
+build/
+node_modules/
+src/types/
+.DS_STORE
+yarn-error.log
+.idea/
+tmp
+tests/.latest.json
+tests/.bin
+config/index.ts
