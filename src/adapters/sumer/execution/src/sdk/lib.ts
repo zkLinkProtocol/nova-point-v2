@@ -38,12 +38,12 @@ const getAllUserPosition = async (blockNumber: number) => {
     const { accountCTokens } = data;
 
     const timestamp = await getTimestampAtBlock(blockNumber)
-    
+
     const res = accountCTokens.map((data) => {
       const userAddress = data.account.id;
       const cTokenBalance = data.cTokenBalance;
       const { id, underlyingAddress, decimals, totalSupply, cash } = data.market;
-      const balance = new BigNumber(cTokenBalance).div(totalSupply).times(cash).times(`1e${decimals}`).toFixed()
+      const balance = new BigNumber(cTokenBalance).div(totalSupply).times(cash).times(`1e${decimals}`).toFixed(0)
 
       return {
         userAddress,
@@ -70,7 +70,7 @@ const getAllUserPosition = async (blockNumber: number) => {
 
 export const getUserPositionsAtBlock = async (blockNumber: number): Promise<UserTVLData[]> => {
   const result = await getAllUserPosition(blockNumber);
-  
+
   return result;
 };
 
