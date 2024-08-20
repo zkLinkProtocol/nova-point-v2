@@ -8,7 +8,7 @@ import config from "./config/index";
 import { HealthModule } from "./health/health.module";
 import { AppService } from "./app.service";
 import { TokenService } from "./token/token.service";
-import { AdapterService } from "./points/adapter.service";
+import { GenAdapterDataService } from "./points/genAdapterData.service";
 import { TokenOffChainDataProvider } from "./token/tokenOffChainData/tokenOffChainDataProvider.abstract";
 import { CoingeckoTokenOffChainDataProvider } from "./token/tokenOffChainData/providers/coingecko/coingeckoTokenOffChainDataProvider";
 import { PortalsFiTokenOffChainDataProvider } from "./token/tokenOffChainData/providers/portalsFi/portalsFiTokenOffChainDataProvider";
@@ -36,10 +36,12 @@ import {
   PointsRepository,
   BlockAddressPointRepository,
   ReferralRepository,
-  BlockReferralPointsRepository,
   ReferralPointsRepository,
+  TvlProcessingRepository,
+  TxProcessingRepository,
   InvitesRepository,
   SeasonTotalPointRepository,
+  OtherPointRepository,
 } from "./repositories";
 import {
   Block,
@@ -61,10 +63,12 @@ import {
   UserStaked,
   UserWithdraw,
   Point,
-  BlockReferralPoints,
   ReferralPoints,
+  TvlProcessingStatus,
+  TxProcessingStatus,
   Invites,
   SeasonTotalPoint,
+  OtherPoint,
 } from "./entities";
 import { typeOrmReferModuleOptions, typeOrmLrtModuleOptions, typeOrmExplorerModuleOptions } from "./typeorm.config";
 import { RetryDelayProvider } from "./retryDelay.provider";
@@ -78,13 +82,13 @@ import { AddressFirstDeposit } from "./entities/addressFirstDeposit.entity";
 import { BalanceOfLpRepository } from "./repositories";
 import { PointsOfLpRepository } from "./repositories";
 import { BlockAddressPointOfLpRepository, TxDataOfPointsRepository } from "./repositories";
-import { TvlPointService } from "./points/tvlPoint.service";
-import { TxVolPointService } from "./points/txVolPoint.service";
-import { TxNumPointService } from "./points/txNumPoint.service";
 import { BoosterService } from "./booster/booster.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RedistributeBalanceService } from "./points/redistributeBalance.service";
 import { DirectPointService } from "./points/directPoint.service";
+import { UpdatePointStatusService } from './points/updatePointStatus.service'
+import { CalTvlPointService } from "./points/calTvlPoint.service";
+import { CalTxPointService } from "./points/calTxPoint.service";
 
 @Module({
   imports: [
@@ -145,14 +149,14 @@ import { DirectPointService } from "./points/directPoint.service";
         UserHolding,
         UserStaked,
         UserWithdraw,
-        BlockReferralPoints,
         ReferralPoints,
-        Invites,
+        TvlProcessingStatus,
+        TxProcessingStatus,
         SeasonTotalPoint,
       ],
       "lrt"
     ),
-    TypeOrmModule.forFeature([Referral], "refer"),
+    TypeOrmModule.forFeature([Referral, Invites, OtherPoint], "refer"),
     TypeOrmModule.forFeature([Block, Token, Balance, Transfer], "explorer"),
 
     EventEmitterModule.forRoot(),
@@ -191,14 +195,11 @@ import { DirectPointService } from "./points/directPoint.service";
     BalanceOfLpRepository,
     PointsOfLpRepository,
     BlockAddressPointOfLpRepository,
-    AdapterService,
-    TvlPointService,
+    GenAdapterDataService,
     ProjectRepository,
     CacheRepository,
     BridgePointService,
     BoosterService,
-    TxVolPointService,
-    TxNumPointService,
     TxDataOfPointsRepository,
     BridgeActiveService,
     RedistributeBalanceService,
@@ -211,15 +212,20 @@ import { DirectPointService } from "./points/directPoint.service";
     UserStakedRepository,
     UserWithdrawRepository,
     DirectPointService,
+    UpdatePointStatusService,
     PointsRepository,
     BlockAddressPointRepository,
     ReferralRepository,
     ReferralPointService,
-    BlockReferralPointsRepository,
     ReferralPointsRepository,
+    TvlProcessingRepository,
+    TxProcessingRepository,
+    CalTvlPointService,
+    CalTxPointService,
     SeasonTotalPointRepository,
     SeasonTotalPointService,
     InvitesRepository,
+    OtherPointRepository,
   ],
 })
-export class AppModule {}
+export class AppModule { }
