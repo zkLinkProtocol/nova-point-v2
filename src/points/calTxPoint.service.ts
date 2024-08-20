@@ -42,8 +42,9 @@ export class CalTxPointService extends Worker {
     try {
       this.logger.log(`${CalTxPointService.name} start...`);
       const pendingProcessed = await this.txProcessingRepository.find({ where: { pointProcessed: false, adapterProcessed: true } })
-      await Promise.all(pendingProcessed.map(async status => { this.calculateTxNumPoint(status) }))
-
+      for (const status of pendingProcessed) {
+        await this.calculateTxPoint(status);
+      }
       await waitFor(() => !this.currentProcessPromise, 10000, 10000);
       if (!this.currentProcessPromise) {
         return;
@@ -84,7 +85,7 @@ export class CalTxPointService extends Worker {
     return newHoldPoint.toNumber()
   }
 
-  async calculateTxNumPoint(status: TxProcessingStatus) {
+  async calculateTxPoint(status: TxProcessingStatus) {
     const { blockNumberStart, blockNumberEnd, projectName } = status
     this.logger.log(`txNum points from ${blockNumberStart} to ${blockNumberEnd}`);
 
@@ -172,9 +173,9 @@ export class CalTxPointService extends Worker {
         const blockAddressPointArr = Array.from(blockAddressPointMap.values());
         const addressPointArr = Array.from(addressPointMap.values());
         await this.blockAddressPointOfLpRepository.addManyIgnoreConflicts(blockAddressPointArr);
-        this.logger.log(`Finish txNum blockAddressPointArr, length: ${blockAddressPointArr.length}`);
+        this.logger.log(`Finish txPoint blockAddressPointArr, ${projectName} length: ${blockAddressPointArr.length}`);
         await this.pointsOfLpRepository.addManyOrUpdate(addressPointArr, ["stakePoint"], ["address", "pairAddress"]);
-        this.logger.log(`Finish txNum addressPointArr, length: ${addressPointArr.length}`);
+        this.logger.log(`Finish txPoint addressPointArr, ${projectName} length: ${addressPointArr.length}`);
         this.txProcessingRepository.upsertStatus({ ...status, pointProcessed: true })
         resolve()
       })

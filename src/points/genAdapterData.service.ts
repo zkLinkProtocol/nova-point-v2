@@ -63,9 +63,8 @@ export class GenAdapterDataService extends Worker {
     try {
       this.logger.log(`${GenAdapterDataService.name} initialized`);
       const dirs = await this.getAllDirectories();
-      const dirPromises = dirs.map(async (dir) => {
+      for (let dir of dirs) {
         try {
-          await this.initDirectory(dir);
           const results = await Promise.allSettled([this.pipeTvlData(dir), this.pipeTxData(dir)]);
           results.forEach(result => {
             if (result.status === 'rejected') {
@@ -75,8 +74,7 @@ export class GenAdapterDataService extends Worker {
         } catch (error) {
           this.logger.error(`Error processing directory ${dir}: ${error.stack}`);
         }
-      });
-      await Promise.all(dirPromises);
+      }
       this.logger.log(`${GenAdapterDataService.name} end`);
       await waitFor(() => !this.currentProcessPromise, 10000, 10000);
       if (!this.currentProcessPromise) {
@@ -93,16 +91,20 @@ export class GenAdapterDataService extends Worker {
     return files.filter(dir => dir.isDirectory() && dir.name !== 'example').map((dirent) => dirent.name);;
   }
 
-  private async initDirectory(dir: string): Promise<void> {
-    this.logger.log(`initDirectory start ${dir}`);
-    await this.runCommand(`npm i && npm run compile`, join(this.adaptersPath, dir, 'execution'));
-    this.logger.log(`initDirectory finished ${dir}`);
+  public async initAllDirectory(): Promise<void> {
+    const dirs = await this.getAllDirectories();
+    const dirPromises = dirs.map(async (dir) => {
+      this.logger.log(`initDirectory start ${dir}`);
+      await this.runCommand(`npm i && npm run compile`, join(this.adaptersPath, dir, 'execution'));
+      this.logger.log(`initDirectory finished ${dir}`);
+    })
+    await Promise.all(dirPromises);
   }
 
   private async runCommand(command: string, cwd: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const [cmd, ...args] = command.split(' ');
-      const child = spawn(cmd, args, { cwd, shell: true });
+      const child = spawn(cmd, args, { cwd, shell: true, stdio: ['ignore', 'ignore', 'pipe'] });
 
       let stderr = '';
 
@@ -110,17 +112,34 @@ export class GenAdapterDataService extends Worker {
         stderr += data.toString();
       });
 
-      child.on('close', (code) => {
+      child.on('close', (code, signal) => {
         if (code === 0) {
           this.logger.log(`Command successfully: ${command}!`);
           resolve();
         } else {
-          const error = new Error(`Command failed: ${command} ${stderr}`);
+          const error = new Error(`Command failed: ${command}; code: ${code}; signal: ${signal}; err: ${stderr}`);
           reject(error);
+        }
+        child.removeAllListeners();
+      });
+
+      child.on('exit', (code) => {
+        if (code !== 0) {
+          this.logger.error(`Process exited command ${command} with code: ${code}, forcing termination`);
+          child.kill();
         }
       });
 
+      child.on('disconnect', () => {
+        if (!child.killed) {
+          this.logger.warn(`Child process disconnected, forcing termination ${command}`);
+          child.kill();
+        }
+        child.removeAllListeners()
+      });
+
       child.on('error', (err) => {
+        child.removeAllListeners()
         reject(err);
       });
     });
@@ -158,8 +177,10 @@ export class GenAdapterDataService extends Worker {
   private async pipeTvlData(dir: string) {
     if (!this.tvlPaths.includes(dir)) return
 
-    this.logger.log(`Start pipeTvlData ${dir} tvl data`)
     const pendingProcess = await this.tvlProcessingRepository.find({ where: { adapterProcessed: false, projectName: dir } });
+    if (pendingProcess.length === 0) return
+
+    this.logger.log(`Start pipeTvlData ${dir} tvl data`)
     await Promise.all(pendingProcess.map(async status => {
       await this.processTvlData(dir, status.blockNumber)
       await this.tvlProcessingRepository.upsertStatus({ ...status, adapterProcessed: true })
@@ -194,8 +215,10 @@ export class GenAdapterDataService extends Worker {
   private async pipeTxData(dir: string) {
     if (!this.txPaths.includes(dir)) return
 
-    this.logger.log(`Start pipeTxData ${dir} tx data`)
     const pendingProcess = await this.txProcessingRepository.find({ where: { adapterProcessed: false, projectName: dir } });
+    if (pendingProcess.length === 0) return
+
+    this.logger.log(`Start pipeTxData ${dir} tx data`)
     await Promise.all(pendingProcess.map(async status => {
       await this.processTxData(dir, status.blockNumberStart, status.blockNumberEnd)
       await this.txProcessingRepository.upsertStatus({ ...status, adapterProcessed: true })
@@ -239,12 +262,14 @@ export class GenAdapterDataService extends Worker {
   private updateTvlProjects = async (rows: Awaited<ReturnType<typeof this.insertTVLDataToDb>>, projectName: string) => {
     const pairAddresses = rows.map(i => i.pairAddress);
     const uniquePairAddresses = [...new Set(pairAddresses)]
-    await this.projectRepository.addManyIgnoreConflicts(uniquePairAddresses.map(item => ({ pairAddress: item, dir: projectName })))
+    await this.projectRepository.addManyIgnoreConflicts(uniquePairAddresses.map(item => ({ pairAddress: item, name: projectName })))
+    this.logger.log(`updateTvlProjects ${projectName} into table ${uniquePairAddresses}`)
   }
 
   private updateTxProjects = async (rows: Awaited<ReturnType<typeof this.insertTXDataToDb>>, projectName: string) => {
     const pairAddresses = rows.map(i => i.contractAddress);
     const uniquePairAddresses = pairAddresses
-    await this.projectRepository.addManyIgnoreConflicts(uniquePairAddresses.map(item => ({ pairAddress: item, dir: projectName })))
+    await this.projectRepository.addManyIgnoreConflicts(uniquePairAddresses.map(item => ({ pairAddress: item, name: projectName })))
+    this.logger.log(`updateTxProjects ${projectName} into table ${uniquePairAddresses}`)
   }
 }

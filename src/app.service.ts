@@ -12,6 +12,7 @@ import { RedistributePointService } from "./points/redistributePoint.service";
 import { BaseDataService } from "./points/baseData.service";
 import { ReferralPointService } from "./points/referralPoints.service";
 import { SeasonTotalPointService } from "./points/seasonTotalPoint.service";
+import { DirectPointService } from "./points/directPoint.service";
 
 @Injectable()
 export class AppService implements OnModuleInit, OnModuleDestroy {
@@ -28,19 +29,19 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     private readonly calTxPointService: CalTxPointService,
     private readonly redistributePointService: RedistributePointService,
     private readonly referralPointService: ReferralPointService,
-    private readonly seasonTotalPointService: SeasonTotalPointService
+    private readonly seasonTotalPointService: SeasonTotalPointService,
+    private readonly directPointService: DirectPointService
   ) {
     this.logger = new Logger(AppService.name);
   }
 
   public async onModuleInit() {
+    await this.genAdapterDataService.initAllDirectory()
     // example:
     // await this.adapterService.runProcess();
     // second params is utc+8
     // await this.tvlPointService.handleHoldPoint(1395273, new Date(1715159940 * 1000).toISOString());
     // this.compensatePoints()
-    await this.referralPointService.handleReferralPoint();
-    await this.seasonTotalPointService.handlePoint();
     this.redistributePointService.runProcess();
     this.startWorkers();
   }
@@ -67,6 +68,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       this.calTvlPointService.start(),
       this.calTxPointService.start(),
       this.seasonTotalPointService.start(),
+      this.directPointService.start(),
     ]);
   }
 
@@ -75,7 +77,11 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       this.baseDataService.stop(),
       this.bridgeActiveService.stop(),
       this.bridgePointService.stop(),
+      this.genAdapterDataService.stop(),
+      this.calTvlPointService.stop(),
+      this.calTxPointService.stop(),
       this.seasonTotalPointService.stop(),
+      this.directPointService.stop(),
     ]);
   }
 

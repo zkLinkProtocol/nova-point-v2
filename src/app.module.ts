@@ -19,6 +19,7 @@ import { TvlPointLinkswapService } from "./points/tvlPointLinkswap.service";
 import { RedistributePointService } from "./points/redistributePoint.service";
 import { ReferralPointService } from "./points/referralPoints.service";
 import { SeasonTotalPointService } from "./points/seasonTotalPoint.service";
+import { ProjectTvlService } from "./points/projectTvl.service";
 import {
   BlockRepository,
   TokenRepository,
@@ -42,6 +43,8 @@ import {
   InvitesRepository,
   SeasonTotalPointRepository,
   OtherPointRepository,
+  SupplementPointRepository,
+  DirectHoldProcessingStatusRepository,
 } from "./repositories";
 import {
   Block,
@@ -69,6 +72,8 @@ import {
   Invites,
   SeasonTotalPoint,
   OtherPoint,
+  SupplementPoint,
+  DirectHoldProcessingStatus,
 } from "./entities";
 import { typeOrmReferModuleOptions, typeOrmLrtModuleOptions, typeOrmExplorerModuleOptions } from "./typeorm.config";
 import { RetryDelayProvider } from "./retryDelay.provider";
@@ -86,7 +91,7 @@ import { BoosterService } from "./booster/booster.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { RedistributeBalanceService } from "./points/redistributeBalance.service";
 import { DirectPointService } from "./points/directPoint.service";
-import { UpdatePointStatusService } from './points/updatePointStatus.service'
+import { UpdatePointStatusService } from "./points/updatePointStatus.service";
 import { CalTvlPointService } from "./points/calTvlPoint.service";
 import { CalTxPointService } from "./points/calTxPoint.service";
 
@@ -153,6 +158,8 @@ import { CalTxPointService } from "./points/calTxPoint.service";
         TvlProcessingStatus,
         TxProcessingStatus,
         SeasonTotalPoint,
+        SupplementPoint,
+        DirectHoldProcessingStatus,
       ],
       "lrt"
     ),
@@ -226,6 +233,9 @@ import { CalTxPointService } from "./points/calTxPoint.service";
     SeasonTotalPointService,
     InvitesRepository,
     OtherPointRepository,
+    ProjectTvlService,
+    SupplementPointRepository,
+    DirectHoldProcessingStatusRepository,
   ],
 })
-export class AppModule { }
+export class AppModule {}

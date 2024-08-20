@@ -6,9 +6,11 @@ import {
   getPositionDetailsAtBlock,
   getTimestampAtBlock,
 } from './sdk/lib';
+import _ from 'lodash'
 
+const BATCH_SIZE = 50;
 
-const processLid = async (lid: bigint, blockNumber: number, timestamp: number) => {
+const processLid = async (lid: bigint, blockNumber: number, timestamp: number): Promise<[UserTVLData, UserTVLData]> => {
   const position = await getPositionDetailsAtBlock(lid, blockNumber);
   const { amount0, amount1 } = await getAmountsForLiquidity(position, blockNumber);
 
@@ -36,48 +38,48 @@ const processLid = async (lid: bigint, blockNumber: number, timestamp: number) =
 const getUserPositionsAtBlock = async (blockNumber: number): Promise<any> => {
   const timestamp = await getTimestampAtBlock(blockNumber)
   const lids = await getAllLidsAtBlock(blockNumber)
-  const tvlMap = new Map()
+  let positionList: UserTVLData[] = []
+  console.log(`novaswap process ${lids.length} items`)
+  for (let i = 0; i < lids.length; i += BATCH_SIZE) {
+    const batch = lids.slice(i, i + BATCH_SIZE);
 
-  for (const lid of lids) {
-    let success = false;
-    while (!success) {
-      try {
-        const [data0, data1] = await processLid(lid, blockNumber, timestamp)
-        if (data0.balance !== 0n) {
-          const uniqueKey = `${data0.userAddress}_${data0.tokenAddress}_${data0.poolAddress}`
-          if (!tvlMap.get(uniqueKey)) {
-            tvlMap.set(uniqueKey, data0)
-          } else {
-            const data = tvlMap.get(uniqueKey)
-            data.balance = data.balance + data0.balance
-          }
+    const batchPromises = batch.map(async (lid) => {
+      let success = false;
+      while (!success) {
+        try {
+          const [data0, data1] = await processLid(lid, blockNumber, timestamp);
+          positionList = positionList.concat(data0, data1);
+          success = true;
+        } catch (error) {
+          console.error(`Error fetching details for Token ID: ${lid}:`, error);
         }
-
-        if (data1.balance !== 0n) {
-          const uniqueKey = `${data1.userAddress}_${data1.tokenAddress}_${data1.poolAddress}`
-          if (!tvlMap.get(uniqueKey)) {
-            tvlMap.set(uniqueKey, data1)
-          } else {
-            const data = tvlMap.get(uniqueKey)
-            data.balance = data.balance + data1.balance
-          }
-        }
-
-        success = true;
-      } catch (error) {
-        console.error(`Error fetching details for Token ID: ${lid}:`, error);
       }
-    }
-  }
+    });
 
-  return Array.from(tvlMap.values())
+    await Promise.all(batchPromises);
+  }
+  return positionList;
 };
 
+export const groupData = async (data: UserTVLData[]) => {
+  return _.chain(data)
+    .groupBy(item => `${item.userAddress.toLowerCase()}-${item.tokenAddress.toLowerCase()}-${item.poolAddress.toLowerCase()}`)
+    .map((items) => ({
+      userAddress: items[0].userAddress,
+      poolAddress: items[0].poolAddress,
+      tokenAddress: items[0].tokenAddress,
+      blockNumber: items[0].blockNumber,
+      balance: items.reduce((sum, item) => sum + item.balance, BigInt(0)),
+      timestamp: items[0].timestamp
+    }))
+    .value().filter(i => i.balance > 0n);
+}
+
 export const getUserTVLData = async (blockNumber: number): Promise<UserTVLData[]> => {
-  const res = await getUserPositionsAtBlock(blockNumber)
+  const rawNovaSwapPosition = await getUserPositionsAtBlock(blockNumber)
+  const res = await groupData(rawNovaSwapPosition)
   return res
 };
 
-// getUserTVLData(3588784)
-
+// getUserTVLData(4519897)
 

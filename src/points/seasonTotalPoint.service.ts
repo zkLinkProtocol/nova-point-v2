@@ -8,12 +8,15 @@ import {
   InvitesRepository,
   SeasonTotalPointRepository,
   ReferralPointsRepository,
+  SupplementPointRepository,
 } from "../repositories";
 import { ConfigService } from "@nestjs/config";
 import seasonConfig from "../config/season";
 import { OTHER_HASH_64, ZERO_HASH_64 } from "src/constants";
 import { SeasonTotalPoint } from "src/entities";
 import { OtherPointRepository } from "src/repositories/otherPoint.repository";
+import { ProjectTvlService } from "./projectTvl.service";
+import { LrtUnitOfWork } from "src/unitOfWork";
 
 interface seasonTotalPoint {
   userAddress: string;
@@ -33,6 +36,9 @@ export class SeasonTotalPointService extends Worker {
     private readonly invitesRepository: InvitesRepository,
     private readonly seasonTotalPointRepository: SeasonTotalPointRepository,
     private readonly otherPointRepository: OtherPointRepository,
+    private readonly supplementPointRepository: SupplementPointRepository,
+    private readonly projectTvlService: ProjectTvlService,
+    private readonly lrtUnitwork: LrtUnitOfWork,
     private readonly configService: ConfigService
   ) {
     super();
@@ -90,11 +96,14 @@ export class SeasonTotalPointService extends Worker {
       tmp.userName = usernameMap.get(item.userAddress) ?? "user-" + item.userAddress.slice(10);
       data.push(tmp);
     }
-    await this.seasonTotalPointRepository.addManyOrUpdate(
-      data,
-      ["point", "userName"],
-      ["userAddress", "pairAddress", "type", "season"]
-    );
+    await this.lrtUnitwork.useTransaction(async () => {
+      await this.seasonTotalPointRepository.deleteBySeason(season);
+      await this.seasonTotalPointRepository.addManyOrUpdate(
+        data,
+        ["point", "userName"],
+        ["userAddress", "pairAddress", "type", "season"]
+      );
+    });
   }
 
   async handleOtherPoint() {
@@ -133,27 +142,32 @@ export class SeasonTotalPointService extends Worker {
     endBlockNumber: number;
     season: number;
   } {
-    const now = new Date();
-    for (const season of seasonConfig) {
-      if (now >= new Date(season.startTime) && now < new Date(season.endTime)) {
-        return season;
-      }
-    }
-    return null;
+    // const now = new Date();
+    // for (const season of seasonConfig) {
+    //   if (now >= new Date(season.startTime) && now < new Date(season.endTime)) {
+    //     return season;
+    //   }
+    // }
+    return seasonConfig[seasonConfig.length - 1];
   }
 
   // get all address's hold point
   private async getDirectHoldPoint(startBlockNumber: number, endBlockNumber: number): Promise<seasonTotalPoint[]> {
-    const holdPointMap = new Map<string, number>();
     const result = await this.blockAddressPointRepository.getAllAddressTotalPoint(startBlockNumber, endBlockNumber);
-    return result.map((item) => {
-      return {
-        userAddress: item.address,
-        pairAddress: ZERO_HASH_64,
-        point: item.totalPoint,
-        type: "directHold",
-      };
-    });
+    const projectValutAddress = await this.projectTvlService.getPairAddressValut();
+    const projectValutAddressMap = new Map<string, boolean>(projectValutAddress.map((item) => [item, true]));
+    const holdPointList = [];
+    for (const item of result) {
+      if (!projectValutAddressMap.has(item.address)) {
+        holdPointList.push({
+          userAddress: item.address,
+          pairAddress: ZERO_HASH_64,
+          point: item.totalPoint,
+          type: "directHold",
+        });
+      }
+    }
+    return holdPointList;
   }
 
   // get all address's tvl point, tx num point, tx vol point, bridgeTxNum point
@@ -190,7 +204,24 @@ export class SeasonTotalPointService extends Worker {
   private async getOtherPoint(startTime: string, endTime: string): Promise<seasonTotalPoint[]> {
     // get daily point
     const otherPointList = [];
-    const result = await this.otherPointRepository.getOtherPointByAddress(startTime, endTime);
+    let result: { address: string; totalPoint: number }[] = [];
+    const otherResult = await this.otherPointRepository.getOtherPointByAddress(startTime, endTime);
+    const supplementResult = await this.supplementPointRepository.getSupplementPointByAddress(startTime, endTime);
+    if (supplementResult.length > 0) {
+      otherResult.push(...supplementResult);
+      const _result = otherResult.reduce((acc, curr) => {
+        const point = Number(curr.totalPoint);
+        if (acc[curr.address]) {
+          acc[curr.address].totalPoint += point;
+        } else {
+          acc[curr.address] = { address: curr.address, totalPoint: point };
+        }
+        return acc;
+      }, {});
+      result = Object.values(_result);
+    } else {
+      result = otherResult;
+    }
     for (const item of result) {
       otherPointList.push({
         userAddress: item.address,
