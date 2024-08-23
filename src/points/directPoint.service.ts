@@ -320,7 +320,7 @@ export class DirectPointService extends Worker {
       }
       item.stakePoint = Number(item.stakePoint) + Number(holdPoint);
     }
-    return new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       this.unitOfWork.useTransaction(async () => {
         try {
           this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
