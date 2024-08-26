@@ -41,7 +41,7 @@ $$
 2. TVL<sub>u,t</sub> (Total Locked Value):
    Total value of liquidity provided to DEX pools or PERPs or Lending Protocol, The TVL refers to the total value of different tokens owned by each user in a specific period of time.
 
-   These tokens are not sTokens or lTokens; rather, they represent the quantity of underlying tokens corresponding to these collateral certificates in the pool, which is USDC/ETH/WETH etc.
+   These tokens represent the quantity of underlying tokens corresponding to these collateral certificates in the pool, which is USDC/ETH/WETH etc. Typically, protocols mint LP tokens to users, and these users holding LP tokens share the TVL points of the protocol. If a user transfers their LP tokens to someone else, the points entitlement will be transferred to the new owner of the LP tokens.
 
    `TVL points = sum_all tokens ( user’s token balance * price * token multiplier ) * project booster`
 
