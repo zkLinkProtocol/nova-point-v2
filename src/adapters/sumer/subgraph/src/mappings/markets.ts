@@ -129,8 +129,11 @@ export function updateMarket(
 
     let tokenPriceUSD = getTokenPrice(blockNumber, contractAddress);
     market.underlyingPrice = tokenPriceUSD.truncate(18);
-
-    market.accrualBlockNumber = contract.accrualBlockNumber();
+    
+    const tryAccrualBlockNumber = contract.try_accrualBlockNumber();
+    if (!tryAccrualBlockNumber.reverted) {
+      market.accrualBlockNumber = tryAccrualBlockNumber.value
+    }
     market.blockTimestamp = blockTimestamp;
     market.totalSupply = contract
       .totalSupply()
