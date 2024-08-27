@@ -28,8 +28,9 @@ export class StatisticService {
   ) {}
 
   // Historical data, run only once
-  @Cron("0 45 7 * * *")
+  @Cron("0 25 13 * * *")
   public async statisticHistoryProtocolDauAndCumulative() {
+    this.logger.log("begin statistics statisticHistoryProtocolDauAndCumulative");
     const result: { min: string; max: string }[] = await this.balanceOfLpRepository.query(
       `select date(min("createdAt")) as min, date(max("createdAt")) as max from "blockAddressPointOfLp"`
     );
@@ -153,8 +154,9 @@ export class StatisticService {
   }
 
   // Historical data, run only once
-  @Cron("0 55 7 * * *")
+  @Cron("0 25 13 * * *")
   public async statisticHistoryTvl() {
+    this.logger.log("begin statistics statisticHistoryTvl");
     const result: { min: string; max: string }[] = await this.balanceOfLpRepository.query(
       `select date(min("createdAt")) as min, date(max("createdAt")) as max from "balancesOfLp"`
     );
