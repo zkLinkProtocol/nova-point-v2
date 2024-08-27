@@ -16,13 +16,13 @@ export class StatisticService {
   private readonly logger = new Logger(StatisticService.name);
 
   constructor(
-    @InjectRepository(BalanceOfLp)
+    @InjectRepository(BalanceOfLp, "lrt")
     private readonly balanceOfLpRepository: Repository<BalanceOfLp>,
-    @InjectRepository(Project)
+    @InjectRepository(Project, "lrt")
     private readonly projectRepository: Repository<Project>,
-    @InjectRepository(ProtocolDau)
+    @InjectRepository(ProtocolDau, "lrt")
     private readonly protocolDauRepository: Repository<ProtocolDau>,
-    @InjectRepository(BlockTokenPrice)
+    @InjectRepository(BlockTokenPrice, "lrt")
     private readonly blockTokenPriceRepository: Repository<BlockTokenPrice>,
     private readonly configService: ConfigService
   ) {}
