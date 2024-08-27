@@ -14,9 +14,15 @@ export class ProjectRepository extends BaseRepository<Project> {
     const transactionManager = this.unitOfWork.getTransactionManager();
     const result = await transactionManager.find(Project, {
       where: {
-        name: projectName
-      }
+        name: projectName,
+      },
     });
+    return result.map((row) => row.pairAddress);
+  }
+
+  public async getAllPairAddresses() {
+    const transactionManager = this.unitOfWork.getTransactionManager();
+    const result = await transactionManager.find(Project);
     return result.map((row) => row.pairAddress);
   }
 
