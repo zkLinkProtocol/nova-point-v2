@@ -26,5 +26,5 @@ export async function getUserTransactionData(blockNumber: number): Promise<UserT
     };
   });
 
-  return userTxData.filter(item => !['0x985925d21B12aB4a148bd794b9Af46faFD7CeE0E', '0xa4F5f50d857DCc15ae9F9B8CdFB821255CF23f9D'].includes(item.userAddress));
+  return userTxData;
 }
