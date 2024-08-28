@@ -9,10 +9,10 @@ import {
   BlockAddressPointRepository,
   AddressFirstDepositRepository,
   DirectHoldProcessingStatusRepository,
+  ProjectRepository,
 } from "../repositories";
 import { TokenMultiplier, TokenService } from "../token/token.service";
 import BigNumber from "bignumber.js";
-import { hexTransformer } from "../transformers/hex.transformer";
 import { ConfigService } from "@nestjs/config";
 import { BaseDataService, getETHPrice, getTokenPrice, STABLE_COIN_TYPE } from "./baseData.service";
 import addressMultipliers from "../config/addressMultipliers";
@@ -26,13 +26,14 @@ type BlockAddressTvl = {
   holdBasePoint: BigNumber;
 };
 
+const AQUA_VAULT = "0x4AC97E2727B0e92AE32F5796b97b7f98dc47F059".toLocaleLowerCase();
+
 @Injectable()
 export class DirectPointService extends Worker {
   private readonly logger: Logger;
   private readonly pointsPhase1StartTime: Date;
   private readonly addressMultipliersCache: Map<string, TokenMultiplier[]>;
   private readonly withdrawStartTime: Date;
-  private addressFirstDepositTimeCache: Map<string, Date>;
 
   public constructor(
     private readonly tokenService: TokenService,
@@ -45,7 +46,8 @@ export class DirectPointService extends Worker {
     private readonly directHoldProcessingStatusRepository: DirectHoldProcessingStatusRepository,
     private readonly baseDataService: BaseDataService,
     private readonly unitOfWork: LrtUnitOfWork,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly projectRepository: ProjectRepository
   ) {
     super();
     this.logger = new Logger(DirectPointService.name);
@@ -56,7 +58,6 @@ export class DirectPointService extends Worker {
     }
     const endDate = new Date(this.pointsPhase1StartTime);
     this.withdrawStartTime = new Date(endDate.setMonth(endDate.getMonth() + 1));
-    this.addressFirstDepositTimeCache = new Map();
   }
 
   @Cron("0 2,10,18 * * *")
@@ -175,6 +176,7 @@ export class DirectPointService extends Worker {
       }
       this.logger.log(`Finishloop address, blockNumber:${currentStatisticalBlock.number}`);
       await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
+      this.logger.log(`Finish page: ${page} for blockNumber: ${currentStatisticalBlock.number}`);
       page++;
     }
 
@@ -204,7 +206,10 @@ export class DirectPointService extends Worker {
     addressBalancesMap: Map<string, Balance[]>
   ): Promise<Map<string, BlockAddressTvl>> {
     const addressTvlMap: Map<string, BlockAddressTvl> = new Map();
-    const existAddressList = await this.blockAddressPointRepository.getAllAddress(blockNumber);
+    let existAddressList = await this.blockAddressPointRepository.getAllAddress(blockNumber);
+    let pairAddressList = await this.projectRepository.getAllPairAddresses();
+    pairAddressList.push(AQUA_VAULT);
+    existAddressList = existAddressList.concat(pairAddressList);
     const existAddressListSet = new Set(existAddressList);
     const finalAddressList = addressList.filter((value) => !existAddressListSet.has(value));
     for (const address of finalAddressList) {
@@ -320,25 +325,25 @@ export class DirectPointService extends Worker {
       }
       item.stakePoint = Number(item.stakePoint) + Number(holdPoint);
     }
-    await new Promise<void>((resolve, reject) => {
-      this.unitOfWork.useTransaction(async () => {
-        try {
-          this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
-          await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
-          this.logger.log(
-            `Finish directHolding blockAddressPoints for block: ${blockNumber}, length: ${blockAddressPoints.length}`
-          );
-          await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
-          this.logger.log(
-            `Finish directHolding newAddressPoints for block: ${blockNumber}, length: ${newAddressPoints.length}`
-          );
-          resolve();
-        } catch (error) {
-          this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
-          reject(error);
-        }
-      });
-    });
+    // await new Promise<void>(async (resolve, reject) => {
+    // await this.unitOfWork.useTransaction(async () => {
+    try {
+      this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
+      await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
+      this.logger.log(
+        `Finish directHolding blockAddressPoints for block: ${blockNumber}, length: ${blockAddressPoints.length}`
+      );
+      await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
+      this.logger.log(
+        `Finish directHolding newAddressPoints for block: ${blockNumber}, length: ${newAddressPoints.length}`
+      );
+      // resolve();
+    } catch (error) {
+      this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
+      // reject(error);
+    }
+    // });
+    // });
   }
 
   isWithdrawStartPhase(blockTs: number): boolean {
