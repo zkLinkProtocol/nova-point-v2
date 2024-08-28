@@ -266,7 +266,7 @@ export class StatisticService {
           continue;
         }
 
-        tvl.plus(
+        tvl = tvl.plus(
           BigNumber(latestPrice.usdPrice).multipliedBy(
             BigNumber(ethers.utils.formatUnits(tokenBalance.balance, token.decimals))
           )
