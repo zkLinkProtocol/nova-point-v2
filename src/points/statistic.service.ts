@@ -261,6 +261,11 @@ export class StatisticService {
           },
         });
 
+        if (!latestPrice) {
+          this.logger.log(`priceId: ${token.cgPriceId}, block: ${maxBlockNumberCurday} not found`);
+          continue;
+        }
+
         tvl.plus(
           BigNumber(latestPrice.usdPrice).multipliedBy(
             BigNumber(ethers.utils.formatUnits(tokenBalance.balance, token.decimals))
