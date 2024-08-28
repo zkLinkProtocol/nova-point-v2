@@ -333,7 +333,7 @@ export class StatisticService {
           cgPriceId: string;
         }[] = await response.json();
 
-        const tokenMap = new Map(data.map((token) => [token.address.l2Address, token]));
+        const tokenMap = new Map(data.map((token) => [token.address.l2Address.toLowerCase(), token]));
         return tokenMap;
       } catch (err) {
         this.logger.error(`Fetch getSupportTokens query data faild, remain retry count: ${maxRetry}`, err.stack);
