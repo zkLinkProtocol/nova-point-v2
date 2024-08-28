@@ -194,9 +194,12 @@ export class StatisticService {
     tokenMap: Map<
       string,
       {
-        address: {
-          l2Address: string;
-        };
+        address: [
+          {
+            chain: string;
+            l2Address: string;
+          },
+        ];
         symbol: string;
         decimals: number;
         cgPriceId: string;
