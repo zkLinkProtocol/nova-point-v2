@@ -9,6 +9,7 @@ import {
   ITokenOffChainData,
   ITokenCurrentPrice,
   ITokenMarketChartProviderResponse,
+  ITokenHistoryProviderResponse,
 } from "../../tokenOffChainDataProvider.abstract";
 import { Token } from "../../../token.service";
 
@@ -29,7 +30,11 @@ interface ITokenMarketDataProviderResponse {
 }
 
 class ProviderResponseError extends Error {
-  constructor(message: string, public readonly status: number, public readonly rateLimitResetDate?: Date) {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly rateLimitResetDate?: Date
+  ) {
     super(message);
   }
 }
@@ -41,7 +46,10 @@ export class CoingeckoTokenOffChainDataProvider implements TokenOffChainDataProv
   private readonly apiKey: string;
   private readonly apiUrl: string;
 
-  constructor(configService: ConfigService, private readonly httpService: HttpService) {
+  constructor(
+    configService: ConfigService,
+    private readonly httpService: HttpService
+  ) {
     this.logger = new Logger(CoingeckoTokenOffChainDataProvider.name);
     this.isProPlan = configService.get<boolean>("tokens.coingecko.isProPlan");
     this.apiKey = configService.get<string>("tokens.coingecko.apiKey");
@@ -166,6 +174,26 @@ export class CoingeckoTokenOffChainDataProvider implements TokenOffChainDataProv
     });
   }
   //end add by nick
+
+  // api doc: https://docs.coingecko.com/reference/coins-id-history
+  public async getTokenPriceByDate(cgPriceId: string, date: Date) {
+    const dateParam = this.formatDate(date);
+
+    return this.makeApiRequestRetryable<ITokenHistoryProviderResponse>({
+      path: `/coins/${cgPriceId}/history`,
+      query: {
+        date: dateParam,
+      },
+    });
+  }
+
+  public formatDate(date: Date) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  }
 
   private async getTokensList() {
     const list = await this.makeApiRequestRetryable<ITokenListItemProviderResponse[]>({

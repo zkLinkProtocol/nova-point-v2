@@ -94,6 +94,8 @@ import { DirectPointService } from "./points/directPoint.service";
 import { UpdatePointStatusService } from "./points/updatePointStatus.service";
 import { CalTvlPointService } from "./points/calTvlPoint.service";
 import { CalTxPointService } from "./points/calTxPoint.service";
+import { ProtocolDau } from "./entities/dau.entity";
+import { StatisticService } from "./points/statistic.service";
 
 @Module({
   imports: [
@@ -160,6 +162,7 @@ import { CalTxPointService } from "./points/calTxPoint.service";
         SeasonTotalPoint,
         SupplementPoint,
         DirectHoldProcessingStatus,
+        ProtocolDau,
       ],
       "lrt"
     ),
@@ -224,6 +227,7 @@ import { CalTxPointService } from "./points/calTxPoint.service";
     BlockAddressPointRepository,
     ReferralRepository,
     ReferralPointService,
+    StatisticService,
     ReferralPointsRepository,
     TvlProcessingRepository,
     TxProcessingRepository,

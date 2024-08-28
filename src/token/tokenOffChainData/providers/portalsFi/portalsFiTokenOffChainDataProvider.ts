@@ -8,6 +8,7 @@ import {
   ITokenOffChainData,
   ITokenCurrentPrice,
   ITokenMarketChartProviderResponse,
+  ITokenHistoryProviderResponse,
 } from "../../tokenOffChainDataProvider.abstract";
 import { Token } from "../../../token.service";
 
@@ -39,6 +40,9 @@ export class PortalsFiTokenOffChainDataProvider implements TokenOffChainDataProv
 
   constructor(private readonly httpService: HttpService) {
     this.logger = new Logger(PortalsFiTokenOffChainDataProvider.name);
+  }
+  public async getTokenPriceByDate(cgPriceId: string, date: Date): Promise<ITokenHistoryProviderResponse> {
+    return null;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
