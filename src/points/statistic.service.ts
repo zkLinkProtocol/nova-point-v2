@@ -157,7 +157,7 @@ export class StatisticService {
   }
 
   // Historical data, run only once
-  @Cron("0 40 8 * * *")
+  @Cron("0 5 9 * * *")
   public async statisticHistoryTvl() {
     this.logger.log("begin statistics statisticHistoryTvl");
     const result: { min: string; max: string }[] = await this.balanceOfLpRepository.query(
