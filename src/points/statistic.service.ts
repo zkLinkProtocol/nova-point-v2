@@ -10,6 +10,8 @@ import { ProtocolDau } from "src/entities/dau.entity";
 import { BlockTokenPrice } from "src/entities/blockTokenPrice.entity";
 import BigNumber from "bignumber.js";
 import { ethers } from "ethers";
+import { CoingeckoTokenOffChainDataProvider } from "src/token/tokenOffChainData/providers/coingecko/coingeckoTokenOffChainDataProvider";
+import { TokenOffChainDataProvider } from "src/token/tokenOffChainData/tokenOffChainDataProvider.abstract";
 
 @Injectable()
 export class StatisticService {
@@ -24,6 +26,7 @@ export class StatisticService {
     private readonly protocolDauRepository: Repository<ProtocolDau>,
     @InjectRepository(BlockTokenPrice, "lrt")
     private readonly blockTokenPriceRepository: Repository<BlockTokenPrice>,
+    private readonly priceProvider: TokenOffChainDataProvider,
     private readonly configService: ConfigService
   ) {}
 
@@ -251,23 +254,11 @@ export class StatisticService {
           this.logger.warn(`l2address: ${l2Address} not found in supported tokens`);
           continue;
         }
-        const latestPrice = await this.blockTokenPriceRepository.findOne({
-          where: {
-            priceId: token.cgPriceId,
-            blockNumber: LessThanOrEqual(maxBlockNumberCurday),
-          },
-          order: {
-            blockNumber: "desc",
-          },
-        });
 
-        if (!latestPrice) {
-          this.logger.log(`priceId: ${token.cgPriceId}, block: ${maxBlockNumberCurday} not found`);
-          continue;
-        }
+        const price = await this.priceProvider.getTokenPriceByDate(token.cgPriceId, day);
 
         tvl = tvl.plus(
-          BigNumber(latestPrice.usdPrice).multipliedBy(
+          BigNumber(price.market_data.current_price.usd).multipliedBy(
             BigNumber(ethers.utils.formatUnits(tokenBalance.balance, token.decimals))
           )
         );
