@@ -325,15 +325,22 @@ export class StatisticService {
       try {
         const response = await fetch("https://app-api.zklink.io/points/tokens/getSupportTokens");
         const data: {
-          address: {
-            l2Address: string;
-          };
+          address: [
+            {
+              chain: string;
+              l2Address: string;
+            },
+          ];
           symbol: string;
           decimals: number;
           cgPriceId: string;
         }[] = await response.json();
 
-        const tokenMap = new Map(data.map((token) => [token.address.l2Address.toLowerCase(), token]));
+        const tokenMap = new Map(
+          data
+            .filter((token) => token.address.find((chain) => chain.chain === "Nova"))
+            .map((token) => [token.address.find((chain) => chain.chain === "Nova").l2Address.toLowerCase(), token])
+        );
         return tokenMap;
       } catch (err) {
         this.logger.error(`Fetch getSupportTokens query data faild, remain retry count: ${maxRetry}`, err.stack);
