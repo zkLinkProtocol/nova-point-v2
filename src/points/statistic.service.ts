@@ -154,7 +154,7 @@ export class StatisticService {
   }
 
   // Historical data, run only once
-  @Cron("0 40 5 * * *")
+  @Cron("0 5 6 * * *")
   public async statisticHistoryTvl() {
     this.logger.log("begin statistics statisticHistoryTvl");
     const result: { min: string; max: string }[] = await this.balanceOfLpRepository.query(
@@ -194,9 +194,12 @@ export class StatisticService {
     tokenMap: Map<
       string,
       {
-        address: {
-          l2Address: string;
-        };
+        address: [
+          {
+            chain: string;
+            l2Address: string;
+          },
+        ];
         symbol: string;
         decimals: number;
         cgPriceId: string;
