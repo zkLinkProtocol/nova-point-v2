@@ -10,7 +10,7 @@ export class ProtocolDau extends BaseEntity {
   @Column({ type: "varchar" })
   public readonly name: string;
 
-  @Column({ type: "int" })
+  @Column({ type: "numeric" })
   public readonly amount: number;
 
   @Column({ type: "date" })
