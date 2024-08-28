@@ -20,9 +20,22 @@ export interface ITokenMarketChartProviderResponse {
   total_volumes: number[][];
 }
 
+// ignore unused properties
+export interface ITokenHistoryProviderResponse {
+  id: string;
+  symbol: string;
+  name: string;
+  market_data: {
+    current_price: {
+      usd: number;
+    };
+  };
+}
+
 export abstract class TokenOffChainDataProvider {
   abstract getTokensOffChainData: (supportTokens: Token[]) => Promise<ITokenOffChainData[]>;
   abstract getTokenPriceByBlock: (tokenId: string, blockTs: number) => Promise<number>;
   abstract getTokensCurrentPrice: (tokens: string[]) => Promise<ITokenCurrentPrice[]>;
   abstract getTokensMarketChart: (tokenId: string, getDate: Date) => Promise<ITokenMarketChartProviderResponse>;
+  abstract getTokenPriceByDate: (cgPriceId: string, date: Date) => Promise<ITokenHistoryProviderResponse>;
 }
