@@ -327,25 +327,25 @@ export class DirectPointService extends Worker {
       }
       item.stakePoint = Number(item.stakePoint) + Number(holdPoint);
     }
-    // await new Promise<void>(async (resolve, reject) => {
-    // await this.unitOfWork.useTransaction(async () => {
-    try {
-      this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
-      await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
-      this.logger.log(
-        `Finish directHolding blockAddressPoints for block: ${blockNumber}, length: ${blockAddressPoints.length}`
-      );
-      await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
-      this.logger.log(
-        `Finish directHolding newAddressPoints for block: ${blockNumber}, length: ${newAddressPoints.length}`
-      );
-      // resolve();
-    } catch (error) {
-      this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
-      // reject(error);
-    }
-    // });
-    // });
+    // // await new Promise<void>(async (resolve, reject) => {
+    // // await this.unitOfWork.useTransaction(async () => {
+    // try {
+    //   this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
+    //   await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
+    //   this.logger.log(
+    //     `Finish directHolding blockAddressPoints for block: ${blockNumber}, length: ${blockAddressPoints.length}`
+    //   );
+    //   await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
+    //   this.logger.log(
+    //     `Finish directHolding newAddressPoints for block: ${blockNumber}, length: ${newAddressPoints.length}`
+    //   );
+    //   // resolve();
+    // } catch (error) {
+    //   this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
+    //   // reject(error);
+    // }
+    // // });
+    // // });
   }
 
   isWithdrawStartPhase(blockTs: number): boolean {
