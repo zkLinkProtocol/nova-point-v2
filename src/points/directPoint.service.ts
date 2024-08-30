@@ -177,7 +177,7 @@ export class DirectPointService extends Worker {
         });
       }
       this.logger.log(`Finishloop address, blockNumber:${currentStatisticalBlock.number}`);
-      await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
+      //await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
       this.logger.log(`Finish page: ${page} for blockNumber: ${currentStatisticalBlock.number}`);
       page++;
     }
