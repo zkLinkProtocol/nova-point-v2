@@ -156,26 +156,26 @@ export class DirectPointService extends Worker {
       );
       // get all first deposit time
       const addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
-      // for (const address of addresses) {
-      //   const addressTvl = addressTvlMap.get(address);
-      //   const addressMultiplier = this.getAddressMultiplier(address, blockTs);
+      for (const address of addresses) {
+        const addressTvl = addressTvlMap.get(address);
+        const addressMultiplier = this.getAddressMultiplier(address, blockTs);
 
-      //   // get the last multiplier before the block timestamp
-      //   const addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
-      //   let groupBooster = new BigNumber(1);
-      //   const loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
-      //   // NOVA Point = sum_all tokens in activity list (Early_Bird_Multiplier * Token Multiplier * Address Multiplier * Token Amount * Token Price * (1 + Group Booster + Growth Booster) * Loyalty Booster / ETH_Price )
-      //   const newHoldPoint = addressTvl.holdBasePoint
-      //     .multipliedBy(earlyBirdMultiplier)
-      //     .multipliedBy(groupBooster)
-      //     .multipliedBy(addressMultiplier)
-      //     .multipliedBy(loyaltyBooster);
-      //   addressHoldPoints.push({
-      //     address,
-      //     holdPoint: newHoldPoint.toNumber(),
-      //     blockNumber: currentStatisticalBlock.number,
-      //   });
-      // }
+        // get the last multiplier before the block timestamp
+        const addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
+        let groupBooster = new BigNumber(1);
+        const loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
+        // NOVA Point = sum_all tokens in activity list (Early_Bird_Multiplier * Token Multiplier * Address Multiplier * Token Amount * Token Price * (1 + Group Booster + Growth Booster) * Loyalty Booster / ETH_Price )
+        // const newHoldPoint = addressTvl.holdBasePoint
+        //   .multipliedBy(earlyBirdMultiplier)
+        //   .multipliedBy(groupBooster)
+        //   .multipliedBy(addressMultiplier)
+        //   .multipliedBy(loyaltyBooster);
+        // addressHoldPoints.push({
+        //   address,
+        //   holdPoint: newHoldPoint.toNumber(),
+        //   blockNumber: currentStatisticalBlock.number,
+        // });
+      }
       this.logger.log(`Finishloop address, blockNumber:${currentStatisticalBlock.number}`);
       // await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
       this.logger.log(`Finish page: ${page} for blockNumber: ${currentStatisticalBlock.number}`);
