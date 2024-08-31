@@ -158,7 +158,7 @@ export class DirectPointService extends Worker {
       const addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
       for (const address of addresses) {
         const addressTvl = addressTvlMap.get(address);
-        const addressMultiplier = this.getAddressMultiplier(address, blockTs);
+        // const addressMultiplier = this.getAddressMultiplier(address, blockTs);
 
         // get the last multiplier before the block timestamp
         const addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
