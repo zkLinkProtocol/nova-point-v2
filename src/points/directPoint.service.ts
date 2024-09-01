@@ -163,7 +163,7 @@ export class DirectPointService extends Worker {
         // get the last multiplier before the block timestamp
         // const addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
         let groupBooster = new BigNumber(1);
-        const loyaltyBooster = 1; //this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
+        // const loyaltyBooster = 1; //this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
         // NOVA Point = sum_all tokens in activity list (Early_Bird_Multiplier * Token Multiplier * Address Multiplier * Token Amount * Token Price * (1 + Group Booster + Growth Booster) * Loyalty Booster / ETH_Price )
         // const newHoldPoint = addressTvl.holdBasePoint
         //   .multipliedBy(earlyBirdMultiplier)
