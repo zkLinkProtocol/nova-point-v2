@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class UpdateDirectPointProcessingStatus1723947331870 implements MigrationInterface {
+export class UpdateDirectPointProcessingStatus1723947331871 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
             UPDATE "directHoldProcessingStatus"

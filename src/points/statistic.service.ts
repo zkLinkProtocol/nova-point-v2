@@ -31,10 +31,6 @@ export class StatisticService {
   ) {}
 
   // Historical data, run only once
-<<<<<<< HEAD
-  @Cron("0 0 2 * * *")
-=======
->>>>>>> main
   public async statisticHistoryProtocolDauAndCumulative() {
     this.logger.log("begin statistics statisticHistoryProtocolDauAndCumulative");
     const result: { min: string; max: string }[] = await this.balanceOfLpRepository.query(
@@ -160,10 +156,6 @@ export class StatisticService {
   }
 
   // Historical data, run only once
-<<<<<<< HEAD
-  @Cron("0 5 9 * * *")
-=======
->>>>>>> main
   public async statisticHistoryTvl() {
     this.logger.log("begin statistics statisticHistoryTvl");
     const result: { min: string; max: string }[] = await this.balanceOfLpRepository.query(
