@@ -1,11 +1,11 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class UpdateDirectPointProcessingStatus1723947331871 implements MigrationInterface {
+export class UpdateDirectPointProcessingStatus1723947331872 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
             UPDATE "directHoldProcessingStatus"
             SET "pointProcessed" = false
-            WHERE "blockNumber" in (5694730,5688827);
+            WHERE "blockNumber" in (5802193,5807949);
         `);
   }
 
