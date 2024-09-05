@@ -159,30 +159,28 @@ export class DirectPointService extends Worker {
       for (const address of addresses) {
         let addressTvl = addressTvlMap.get(address);
         let addressMultiplier = this.getAddressMultiplier(address, blockTs);
-        // let addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
-        //let groupBooster = 1;
-        let loyaltyBooster = 1; //this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
+        let addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
+        let loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
         let newHoldPoint = addressTvl.holdBasePoint
           .multipliedBy(earlyBirdMultiplier)
-          // .multipliedBy(groupBooster)
+          .multipliedBy(1)
           .multipliedBy(addressMultiplier)
           .multipliedBy(loyaltyBooster);
 
-        // addressHoldPoints.push({
-        //   address,
-        //   holdPoint: newHoldPoint.toNumber(),
-        //   blockNumber: currentStatisticalBlock.number,
-        // });
+        addressHoldPoints.push({
+          address,
+          holdPoint: newHoldPoint.toNumber(),
+          blockNumber: currentStatisticalBlock.number,
+        });
 
         addressTvl = null;
         addressMultiplier = null;
-        // addressFirstDepositMap = null;
-        // groupBooster = null;
+        addressFirstDepositTime = null;
         loyaltyBooster = null;
         newHoldPoint = null;
       }
       this.logger.log(`Finishloop address, blockNumber:${currentStatisticalBlock.number}`);
-      // await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
+      await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
       this.logger.log(`Finish page: ${page} for blockNumber: ${currentStatisticalBlock.number}`);
       page++;
     }

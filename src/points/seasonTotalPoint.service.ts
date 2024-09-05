@@ -72,8 +72,8 @@ export class SeasonTotalPointService extends Worker {
     return this.runProcess();
   }
 
-  async handlePoint() {
-    const seasonTime = this.getCurrentSeasonTime();
+  async handlePoint(specialSeason?: number) {
+    const seasonTime = this.getCurrentSeasonTime(specialSeason);
     if (!seasonTime) {
       this.logger.log("No season time");
       return;
@@ -135,7 +135,7 @@ export class SeasonTotalPointService extends Worker {
   }
 
   // get current season time
-  public getCurrentSeasonTime(): {
+  public getCurrentSeasonTime(specialSeason?: number): {
     startTime: string;
     endTime: string;
     startBlockNumber: number;
@@ -148,7 +148,11 @@ export class SeasonTotalPointService extends Worker {
     //     return season;
     //   }
     // }
-    return seasonConfig[seasonConfig.length - 1];
+    if (specialSeason) {
+      return seasonConfig.filter((item) => item.season === specialSeason)[0];
+    } else {
+      return seasonConfig[seasonConfig.length - 1];
+    }
   }
 
   // get all address's hold point

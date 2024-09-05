@@ -188,11 +188,11 @@ export class CoingeckoTokenOffChainDataProvider implements TokenOffChainDataProv
   }
 
   public formatDate(date: Date) {
-    const day = String(date.getDate()).padStart(2, "0"); // 获取日期并补零
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // 获取月份并补零
-    const year = date.getFullYear(); // 获取年份
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
 
-    return `${day}-${month}-${year}`; // 返回格式化后的日期
+    return `${day}-${month}-${year}`;
   }
 
   private async getTokensList() {
