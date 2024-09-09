@@ -55,7 +55,7 @@ export class BalanceRepository extends BaseRepository<Balance> {
     });
   }
 
-  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 200): Promise<string[]> {
+  public async getAllAddressesByBlock(blockNumber: number, page: number, limit: number = 2000): Promise<string[]> {
     const offset = page * limit;
     const transactionManager = this.unitOfWork.getTransactionManager();
     const result = await transactionManager.query(
