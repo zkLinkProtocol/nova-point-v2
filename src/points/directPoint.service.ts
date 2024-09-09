@@ -19,6 +19,7 @@ import addressMultipliers from "../config/addressMultipliers";
 import waitFor from "src/utils/waitFor";
 import { LrtUnitOfWork } from "src/unitOfWork";
 import { Balance } from "src/entities";
+import { add } from "winston";
 
 export const LOYALTY_BOOSTER_FACTOR: BigNumber = new BigNumber(0.005);
 type BlockAddressTvl = {
@@ -85,8 +86,6 @@ export class DirectPointService extends Worker {
 
   public async runProcess(): Promise<void> {
     const blockNumbers = await this.directHoldProcessingStatusRepository.getUnprocessedBlockNumber();
-
-    this.logger.log(`Start to calculate hold point, ${JSON.stringify(blockNumbers)}`);
     if (blockNumbers.length > 0) {
       for (const blockNumber of blockNumbers) {
         try {
@@ -128,45 +127,47 @@ export class DirectPointService extends Worker {
     }
     let page = 0;
     while (true) {
-      const addressHoldPoints: {
+      let addressHoldPoints: {
         address: string;
         holdPoint: number;
         blockNumber: number;
       }[] = [];
 
-      const addressList = await this.getAddressPaging(currentStatisticalBlock.number, page);
+      let addressList = await this.getAddressPaging(currentStatisticalBlock.number, page);
       if (addressList.length == 0) {
         this.logger.error(`blockNumber:${currentStatisticalBlock.number}, page:${page}, addressList is empty`);
         break;
       }
-      const addressTvlMap = await this.getAddressTvlMap(
+      let addressTvlMap = await this.getAddressTvlMap(
         currentStatisticalBlock.number,
         blockTs,
         tokenPriceMap,
         addressList,
         addressBalancesMap
       );
+      addressList = null;
       if (addressTvlMap.size == 0) {
         page++;
         continue;
       }
-      const addresses = Array.from(addressTvlMap.keys());
+      let addresses = Array.from(addressTvlMap.keys());
       this.logger.log(
         `Start loop address, blockNumber:${currentStatisticalBlock.number}, address count: ${addresses.length}`
       );
       // get all first deposit time
-      const addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
+      let addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
       for (const address of addresses) {
         let addressTvl = addressTvlMap.get(address);
         let addressMultiplier = this.getAddressMultiplier(address, blockTs);
+
+        // get the last multiplier before the block timestamp
         let addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
         let loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
+        // NOVA Point = sum_all tokens in activity list (Early_Bird_Multiplier * Token Multiplier * Address Multiplier * Token Amount * Token Price * (1 + Group Booster + Growth Booster) * Loyalty Booster / ETH_Price )
         let newHoldPoint = addressTvl.holdBasePoint
           .multipliedBy(earlyBirdMultiplier)
-          .multipliedBy(1)
           .multipliedBy(addressMultiplier)
           .multipliedBy(loyaltyBooster);
-
         addressHoldPoints.push({
           address,
           holdPoint: newHoldPoint.toNumber(),
@@ -179,9 +180,13 @@ export class DirectPointService extends Worker {
         loyaltyBooster = null;
         newHoldPoint = null;
       }
+      addresses = null;
+      addressTvlMap = null;
+      addressFirstDepositMap = null;
       this.logger.log(`Finishloop address, blockNumber:${currentStatisticalBlock.number}`);
       await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
       this.logger.log(`Finish page: ${page} for blockNumber: ${currentStatisticalBlock.number}`);
+      addressHoldPoints = null;
       page++;
     }
 
@@ -320,35 +325,35 @@ export class DirectPointService extends Worker {
     }
     const addressPoints = await this.pointsRepository.getPoints();
     const addressPointsMap = new Map<string, number>();
-    // for (const item of addressPoints) {
-    //   addressPointsMap.set(item.address, item.stakePoint);
-    // }
-    // for (const item of newAddressPoints) {
-    //   const holdPoint = addressPointsMap.get(item.address);
-    //   if (!holdPoint) {
-    //     continue;
-    //   }
-    //   item.stakePoint = Number(item.stakePoint) + Number(holdPoint);
-    // }
-    // // await new Promise<void>(async (resolve, reject) => {
-    // // await this.unitOfWork.useTransaction(async () => {
-    // try {
-    //   this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
-    //   await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
-    //   this.logger.log(
-    //     `Finish directHolding blockAddressPoints for block: ${blockNumber}, length: ${blockAddressPoints.length}`
-    //   );
-    //   await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
-    //   this.logger.log(
-    //     `Finish directHolding newAddressPoints for block: ${blockNumber}, length: ${newAddressPoints.length}`
-    //   );
-    //   // resolve();
-    // } catch (error) {
-    //   this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
-    //   // reject(error);
-    // }
-    // // });
-    // // });
+    for (const item of addressPoints) {
+      addressPointsMap.set(item.address, item.stakePoint);
+    }
+    for (const item of newAddressPoints) {
+      const holdPoint = addressPointsMap.get(item.address);
+      if (!holdPoint) {
+        continue;
+      }
+      item.stakePoint = Number(item.stakePoint) + Number(holdPoint);
+    }
+    // await new Promise<void>(async (resolve, reject) => {
+    // await this.unitOfWork.useTransaction(async () => {
+    try {
+      this.logger.log(`Start insert directHolding point into db for block: ${blockNumber}`);
+      await this.blockAddressPointRepository.addManyIgnoreConflicts(blockAddressPoints);
+      this.logger.log(
+        `Finish directHolding blockAddressPoints for block: ${blockNumber}, length: ${blockAddressPoints.length}`
+      );
+      await this.pointsRepository.addManyOrUpdate(newAddressPoints, ["stakePoint"], ["address"]);
+      this.logger.log(
+        `Finish directHolding newAddressPoints for block: ${blockNumber}, length: ${newAddressPoints.length}`
+      );
+      // resolve();
+    } catch (error) {
+      this.logger.error(`Failed to update hold points for block ${blockNumber}: ${error.stack}`);
+      // reject(error);
+    }
+    // });
+    // });
   }
 
   isWithdrawStartPhase(blockTs: number): boolean {
