@@ -19,6 +19,7 @@ import addressMultipliers from "../config/addressMultipliers";
 import waitFor from "src/utils/waitFor";
 import { LrtUnitOfWork } from "src/unitOfWork";
 import { Balance } from "src/entities";
+import { add } from "winston";
 
 export const LOYALTY_BOOSTER_FACTOR: BigNumber = new BigNumber(0.005);
 type BlockAddressTvl = {
@@ -126,46 +127,45 @@ export class DirectPointService extends Worker {
     }
     let page = 0;
     while (true) {
-      const addressHoldPoints: {
+      let addressHoldPoints: {
         address: string;
         holdPoint: number;
         blockNumber: number;
       }[] = [];
 
-      const addressList = await this.getAddressPaging(currentStatisticalBlock.number, page);
+      let addressList = await this.getAddressPaging(currentStatisticalBlock.number, page);
       if (addressList.length == 0) {
         this.logger.error(`blockNumber:${currentStatisticalBlock.number}, page:${page}, addressList is empty`);
         break;
       }
-      const addressTvlMap = await this.getAddressTvlMap(
+      let addressTvlMap = await this.getAddressTvlMap(
         currentStatisticalBlock.number,
         blockTs,
         tokenPriceMap,
         addressList,
         addressBalancesMap
       );
+      addressList = null;
       if (addressTvlMap.size == 0) {
         page++;
         continue;
       }
-      const addresses = Array.from(addressTvlMap.keys());
+      let addresses = Array.from(addressTvlMap.keys());
       this.logger.log(
         `Start loop address, blockNumber:${currentStatisticalBlock.number}, address count: ${addresses.length}`
       );
       // get all first deposit time
-      const addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
+      let addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
       for (const address of addresses) {
-        const addressTvl = addressTvlMap.get(address);
-        const addressMultiplier = this.getAddressMultiplier(address, blockTs);
+        let addressTvl = addressTvlMap.get(address);
+        let addressMultiplier = this.getAddressMultiplier(address, blockTs);
 
         // get the last multiplier before the block timestamp
-        const addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
-        let groupBooster = new BigNumber(1);
-        const loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
+        let addressFirstDepositTime = addressFirstDepositMap.get(address.toLowerCase());
+        let loyaltyBooster = this.getLoyaltyBooster(blockTs, addressFirstDepositTime?.getTime());
         // NOVA Point = sum_all tokens in activity list (Early_Bird_Multiplier * Token Multiplier * Address Multiplier * Token Amount * Token Price * (1 + Group Booster + Growth Booster) * Loyalty Booster / ETH_Price )
-        const newHoldPoint = addressTvl.holdBasePoint
+        let newHoldPoint = addressTvl.holdBasePoint
           .multipliedBy(earlyBirdMultiplier)
-          .multipliedBy(groupBooster)
           .multipliedBy(addressMultiplier)
           .multipliedBy(loyaltyBooster);
         addressHoldPoints.push({
@@ -173,10 +173,20 @@ export class DirectPointService extends Worker {
           holdPoint: newHoldPoint.toNumber(),
           blockNumber: currentStatisticalBlock.number,
         });
+
+        addressTvl = null;
+        addressMultiplier = null;
+        addressFirstDepositTime = null;
+        loyaltyBooster = null;
+        newHoldPoint = null;
       }
+      addresses = null;
+      addressTvlMap = null;
+      addressFirstDepositMap = null;
       this.logger.log(`Finishloop address, blockNumber:${currentStatisticalBlock.number}`);
       await this.updateHoldPoint(addressHoldPoints, currentStatisticalBlock.number);
       this.logger.log(`Finish page: ${page} for blockNumber: ${currentStatisticalBlock.number}`);
+      addressHoldPoints = null;
       page++;
     }
 
