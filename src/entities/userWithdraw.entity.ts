@@ -15,6 +15,7 @@ export class UserWithdraw extends BaseEntity {
   tokenAddress: string;
 
   @PrimaryColumn({ type: 'timestamp' })
+  @Index()
   timestamp: Date;
 
   @Column({ type: "varchar", length: 128 })

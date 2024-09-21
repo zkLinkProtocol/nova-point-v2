@@ -218,17 +218,17 @@ export class RedistributePointService extends Worker {
     while (fetchNext) {
       const queryPoints = `
         query WithdrawPoints {
-        withdrawPoints(first: ${pageSize}, skip: ${skip}){
-          id
-          project
-          balance
-          weightBalance
-          address
-          timeWeightAmountIn
-          timeWeightAmountOut
-          blockTimestamp
+          withdrawPoints(first: ${pageSize}, skip: ${skip}){
+            id
+            project
+            balance
+            weightBalance
+            address
+            timeWeightAmountIn
+            timeWeightAmountOut
+            blockTimestamp
+          }
         }
-      }
       `;
       const data = await fetchGraphQLData<{ withdrawPoints: GraphWithdrawPoint[] }>(this.SUBGRAPH_URL, queryPoints);
       if (!data) {
