@@ -290,7 +290,7 @@ export class CoingeckoTokenOffChainDataProvider implements TokenOffChainDataProv
             throw new ProviderResponseError(error.message, error.response.status, rateLimitResetDate);
           }
           this.logger.error({
-            message: `Failed to fetch data at ${path} from coingecko`,
+            message: `Failed to fetch data at ${this.apiUrl}${path}?${queryString} from coingecko, ${error.message}`,
             stack: error.stack,
             status: error.response?.status,
             response: error.response?.data,
