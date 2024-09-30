@@ -61,7 +61,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
   private startWorkers() {
     return Promise.all([
-      this.baseDataService.start(),
+      // this.baseDataService.start(),
       this.bridgeActiveService.start(),
       this.bridgePointService.start(),
       this.genAdapterDataService.start(),
