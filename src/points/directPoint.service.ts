@@ -115,8 +115,8 @@ export class DirectPointService extends Worker {
     const tokenPriceMap = await this.getTokenPriceMap(currentStatisticalBlock.number);
     const blockTs = currentStatisticalBlock.timestamp.getTime();
 
-    const addressBalances = await this.balanceRepository.getAllAccountBalancesByBlock(currentStatisticalBlock.number);
-    const addressBalancesMap: Map<string, Balance[]> = new Map();
+    let addressBalances = await this.balanceRepository.getAllAccountBalancesByBlock(currentStatisticalBlock.number);
+    let addressBalancesMap: Map<string, Balance[]> = new Map();
     for (const item of addressBalances) {
       const address = item.address;
       if (addressBalancesMap.has(address)) {
@@ -125,6 +125,7 @@ export class DirectPointService extends Worker {
         addressBalancesMap.set(address, [item]);
       }
     }
+    this.logger.log(`addressBalances length ${addressBalances.length}, addressBalancesMap size ${addressBalancesMap.size} `)
     let page = 0;
     while (true) {
       let addressHoldPoints: {
@@ -190,6 +191,8 @@ export class DirectPointService extends Worker {
       page++;
     }
 
+    addressBalances = null;
+    addressBalancesMap = null;
     await this.directHoldProcessingStatusRepository.upsertStatus({
       blockNumber: currentStatisticalBlock.number,
       pointProcessed: true,
