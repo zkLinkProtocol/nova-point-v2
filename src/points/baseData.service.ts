@@ -58,7 +58,7 @@ export class BaseDataService extends Worker {
     private readonly transferRepository: TransferRepository,
     private readonly addressFirstDepositRepository: AddressFirstDepositRepository,
     private readonly tokenOffChainDataProvider: TokenOffChainDataProvider,
-    private readonly cacheRepository: CacheRepository,
+    private readonly cacheRepository: CacheRepository
   ) {
     super();
     this.logger = new Logger(BaseDataService.name);
@@ -139,8 +139,15 @@ export class BaseDataService extends Worker {
     });
     const tokenPrices: Map<string, BigNumber> = new Map();
     for (const priceId of allPriceIds) {
-      const price = await this.storeTokenPriceAtBlockNumber(block, priceId);
-      tokenPrices.set(priceId, price);
+      try {
+        const price = await this.storeTokenPriceAtBlockNumber(block, priceId);
+        tokenPrices.set(priceId, price);
+      } catch (error) {
+        this.logger.error(
+          `Failed to store token price at block number: ${block.number}, priceId: ${priceId}`,
+          error.stack
+        );
+      }
     }
     return tokenPrices;
   }
@@ -179,7 +186,7 @@ export class BaseDataService extends Worker {
       `Current price of token '${priceId}': [timestamp: ${new Date(lastChart[0])}, price: ${lastChart[1]}]`
     );
     if (lastChart[0] + 3600000 <= blockTs.getTime()) {
-      throw new Error(`Too old price, block ts: ${blockTs}`);
+      throw new Error(`Too old price, priceId:${priceId}, lastChart[0]:${lastChart[0]}, block ts: ${blockTs}`);
     }
     this.tokenPriceCache.set(priceId, marketChart);
     return new BigNumber(lastChart[1]);
