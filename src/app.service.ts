@@ -67,7 +67,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
       this.genAdapterDataService.start(),
       this.calTvlPointService.start(),
       this.calTxPointService.start(),
-      this.seasonTotalPointService.start(),
+      // this.seasonTotalPointService.start(),
       this.directPointService.start(),
     ]);
   }
