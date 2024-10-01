@@ -85,21 +85,24 @@ export class DirectPointService extends Worker {
   }
 
   public async runProcess(): Promise<void> {
-    const blockNumbers = await this.directHoldProcessingStatusRepository.getUnprocessedBlockNumber();
-    if (blockNumbers.length > 0) {
-      for (const blockNumber of blockNumbers) {
-        try {
-          await this.handleHoldPoint(blockNumber.blockNumber);
-        } catch (error) {
-          this.logger.error("Failed to calculate hold point", error.stack);
+    while (true) {
+      const blockNumbers = await this.directHoldProcessingStatusRepository.getUnprocessedBlockNumber();
+      if (blockNumbers.length > 0) {
+        for (const blockNumber of blockNumbers) {
+          try {
+            await this.handleHoldPoint(blockNumber.blockNumber);
+          } catch (error) {
+            this.logger.error("Failed to calculate hold point", error.stack);
+          }
         }
-      }
-      await waitFor(() => !this.currentProcessPromise, 60000, 60000);
-      if (!this.currentProcessPromise) {
-        return;
+        await waitFor(() => !this.currentProcessPromise, 60000);
+        if (!this.currentProcessPromise) {
+          break;
+        }
+      } else {
+        await waitFor(() => !this.currentProcessPromise, 60000);
       }
     }
-    return this.runProcess();
   }
 
   async handleHoldPoint(currentBlockNumber: number) {
@@ -198,8 +201,7 @@ export class DirectPointService extends Worker {
     const statisticEndTime = new Date();
     const statisticElapsedTime = statisticEndTime.getTime() - statisticStartTime.getTime();
     this.logger.log(
-      `Finish hold point statistic for block: ${currentStatisticalBlock.number}, elapsed time: ${
-        statisticElapsedTime / 1000
+      `Finish hold point statistic for block: ${currentStatisticalBlock.number}, elapsed time: ${statisticElapsedTime / 1000
       } seconds`
     );
   }
