@@ -57,6 +57,7 @@ export class RedistributePointService extends Worker {
   private readonly logger: Logger;
   private readonly BATCH_SIZE = 1000;
   private readonly SUBGRAPH_URL = "https://graph.zklink.io/subgraphs/name/nova-points-redistribute-v4";
+  private now: number
 
   public constructor(
     private readonly userRepository: UserRepository,
@@ -76,7 +77,7 @@ export class RedistributePointService extends Worker {
   async runProcess() {
     while (true) {
       try {
-        const now = Date.now();
+        this.now = (new Date().getTime() / 1000) | 0;
         const { holdingsPointData, stakesPointData, withdrawList } = await this.fetchData();
         await this.insertOrUpdateUsers([
           ...new Set([...holdingsPointData, ...stakesPointData, ...withdrawList].map((d) => d.userAddress)),
@@ -84,7 +85,7 @@ export class RedistributePointService extends Worker {
         await this.insertOrUpdateHoldingData(holdingsPointData);
         await this.insertOrUpdateStakedData(stakesPointData);
         await this.insertOrUpdateWithdrawData(withdrawList);
-        this.logger.log(`Process all redistributePointService cost ${Date.now() - now} ms`);
+        this.logger.log(`Process all redistributePointService cost ${(Date.now() / 1000 | 0) - this.now} s`);
       } catch (error) {
         this.logger.error(`Error in RedistributePointService runLoop, ${error.stack}}`);
       }
@@ -281,12 +282,11 @@ export class RedistributePointService extends Worker {
 
   private async genTokenBalancePointsWeightMap() {
     const totalPointWeightData = await this.queryTotalPointsWeightingData();
-    const now = (new Date().getTime() / 1000) | 0;
     const result = new Map(
       totalPointWeightData.map((item) => {
         const [_, tokenAddress] = item.project.split("-");
         const pointsWeight =
-          BigInt(item.totalWeightBalance) * BigInt(now) -
+          BigInt(item.totalWeightBalance) * BigInt(this.now) -
           (BigInt(item.totalTimeWeightAmountIn) - BigInt(item.totalTimeWeightAmountOut));
         return [tokenAddress, pointsWeight];
       })
@@ -296,7 +296,6 @@ export class RedistributePointService extends Worker {
   }
 
   private calcWithdrawBalanceWeight(withdrawBalanceInfo: GraphWithdrawPoint) {
-    const now = (new Date().getTime() / 1000) | 0;
     let timestamp = Number(withdrawBalanceInfo.blockTimestamp);
     for (const item of withdrawTime) {
       if (timestamp >= item.start && timestamp < item.end) {
@@ -304,7 +303,7 @@ export class RedistributePointService extends Worker {
         break;
       }
     }
-    timestamp = timestamp < now ? timestamp : now;
+    timestamp = timestamp < this.now ? timestamp : this.now;
     const { weightBalance, timeWeightAmountIn, timeWeightAmountOut } = withdrawBalanceInfo;
 
     return BigInt(weightBalance) * BigInt(timestamp) - (BigInt(timeWeightAmountIn) - BigInt(timeWeightAmountOut));
@@ -347,8 +346,7 @@ export class RedistributePointService extends Worker {
     const withdrawTime: number = 1714356000;
     // transfer failed startTime:2024-04-09 21:18:35 +8UTC
     const transferFailedStartTime: number = 1712639915;
-    const now = (new Date().getTime() / 1000) | 0;
-    const calcTime = Math.min(now, withdrawTime);
+    const calcTime = Math.min(this.now, withdrawTime);
 
     const [userTokenTransferFailedPointsWeightMap, tokenTransferFailedPointsWeightMap] = transferFailedData.reduce(
       ([userMapResult, tokenMapResult], item) => {
@@ -385,7 +383,6 @@ export class RedistributePointService extends Worker {
       this.queryPointWeightData(),
       this.queryPoolsMap(),
     ]);
-    const now = (new Date().getTime() / 1000) | 0;
 
     const holdingsPointData: OmitEntityTime<UserHolding>[] = [];
     const stakesPointData: OmitEntityTime<UserStaked>[] = [];
@@ -395,7 +392,7 @@ export class RedistributePointService extends Worker {
       const key = this.genUserTokenMapKey(data.address, tokenAddressOrPoolAddress);
 
       const tokenPointsWeight =
-        BigInt(data.weightBalance) * BigInt(now) - (BigInt(data.timeWeightAmountIn) - BigInt(data.timeWeightAmountOut));
+        BigInt(data.weightBalance) * BigInt(this.now) - (BigInt(data.timeWeightAmountIn) - BigInt(data.timeWeightAmountOut));
       const userTokenWithdrawWeight = userTokenWithdrawWeightMap.get(key) ?? BigInt(0);
       const userTokenTransferFailedWeight = userTokenTransferFailedPointsWeightMap.get(key) ?? BigInt(0);
       const userTokenPointWeight = tokenPointsWeight + userTokenWithdrawWeight + userTokenTransferFailedWeight;
