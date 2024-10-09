@@ -10,6 +10,7 @@ import {
   AddressFirstDepositRepository,
   DirectHoldProcessingStatusRepository,
   ProjectRepository,
+  CacheRepository,
 } from "../repositories";
 import { TokenMultiplier, TokenService } from "../token/token.service";
 import BigNumber from "bignumber.js";
@@ -19,15 +20,16 @@ import addressMultipliers from "../config/addressMultipliers";
 import waitFor from "src/utils/waitFor";
 import { LrtUnitOfWork } from "src/unitOfWork";
 import { Balance } from "src/entities";
-import { add } from "winston";
 
 export const LOYALTY_BOOSTER_FACTOR: BigNumber = new BigNumber(0.005);
 type BlockAddressTvl = {
   tvl: BigNumber;
+  tvlUsd: BigNumber;
   holdBasePoint: BigNumber;
 };
 
 const AQUA_VAULT = "0x4AC97E2727B0e92AE32F5796b97b7f98dc47F059".toLocaleLowerCase();
+const HOLDING_TVL_USD = "holdingTvlUsd";
 
 @Injectable()
 export class DirectPointService extends Worker {
@@ -48,7 +50,8 @@ export class DirectPointService extends Worker {
     private readonly baseDataService: BaseDataService,
     private readonly unitOfWork: LrtUnitOfWork,
     private readonly configService: ConfigService,
-    private readonly projectRepository: ProjectRepository
+    private readonly projectRepository: ProjectRepository,
+    private readonly cacheRepository: CacheRepository
   ) {
     super();
     this.logger = new Logger(DirectPointService.name);
@@ -128,6 +131,7 @@ export class DirectPointService extends Worker {
         addressBalancesMap.set(address, [item]);
       }
     }
+    let totalTvlUsd = new BigNumber(0);
     let page = 0;
     while (true) {
       let addressHoldPoints: {
@@ -161,6 +165,7 @@ export class DirectPointService extends Worker {
       let addressFirstDepositMap = await this.addressFirstDepositRepository.getFirstDepositMapForAddresses(addresses);
       for (const address of addresses) {
         let addressTvl = addressTvlMap.get(address);
+        totalTvlUsd = totalTvlUsd.plus(addressTvl.tvlUsd);
         let addressMultiplier = this.getAddressMultiplier(address, blockTs);
 
         // get the last multiplier before the block timestamp
@@ -192,6 +197,8 @@ export class DirectPointService extends Worker {
       addressHoldPoints = null;
       page++;
     }
+    this.logger.log(`blockNumber:${currentStatisticalBlock.number}, totalTvlUsd:${totalTvlUsd.toString()}`);
+    await this.cacheRepository.setValue(HOLDING_TVL_USD, totalTvlUsd.toString());
 
     await this.directHoldProcessingStatusRepository.upsertStatus({
       blockNumber: currentStatisticalBlock.number,
@@ -201,7 +208,8 @@ export class DirectPointService extends Worker {
     const statisticEndTime = new Date();
     const statisticElapsedTime = statisticEndTime.getTime() - statisticStartTime.getTime();
     this.logger.log(
-      `Finish hold point statistic for block: ${currentStatisticalBlock.number}, elapsed time: ${statisticElapsedTime / 1000
+      `Finish hold point statistic for block: ${currentStatisticalBlock.number}, elapsed time: ${
+        statisticElapsedTime / 1000
       } seconds`
     );
   }
@@ -261,6 +269,7 @@ export class DirectPointService extends Worker {
     addressBalances: Balance[]
   ): Promise<BlockAddressTvl> {
     let tvl: BigNumber = new BigNumber(0);
+    let tvlUsd: BigNumber = new BigNumber(0);
     let holdBasePoint: BigNumber = new BigNumber(0);
     for (const addressBalance of addressBalances) {
       // filter not support token
@@ -272,15 +281,18 @@ export class DirectPointService extends Worker {
       const tokenPrice = getTokenPrice(tokenInfo, tokenPrices);
       const ethPrice = getETHPrice(tokenPrices);
       const tokenAmount = new BigNumber(addressBalance.balance).dividedBy(new BigNumber(10).pow(tokenInfo.decimals));
+      const tokenTvlUsd = tokenAmount.multipliedBy(tokenPrice);
       const tokenTvl = tokenAmount.multipliedBy(tokenPrice).dividedBy(ethPrice);
       // base point = Token Multiplier * Token Amount * Token Price / ETH_Price
       const tokenMultiplier = this.tokenService.getTokenMultiplier(tokenInfo, blockTs);
       const tokenHoldBasePoint = tokenTvl.multipliedBy(new BigNumber(tokenMultiplier));
       tvl = tvl.plus(tokenTvl);
+      tvlUsd = tvlUsd.plus(tokenTvlUsd);
       holdBasePoint = holdBasePoint.plus(tokenHoldBasePoint);
     }
     return {
       tvl,
+      tvlUsd,
       holdBasePoint,
     };
   }
