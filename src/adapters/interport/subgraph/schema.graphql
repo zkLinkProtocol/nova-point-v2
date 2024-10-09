@@ -6,3 +6,17 @@ type UserStake @entity {
   timestamp: BigInt!
   blocknumber: BigInt!
 }
+
+type TransferEvent @entity {
+  id: ID!
+  timestamp: BigInt!
+  userAddress: Bytes!
+  contractAddress: Bytes!
+  tokenAddress: Bytes!
+  quantity: BigInt!
+  txHash: Bytes!
+  nonce: String!
+  blockNumber: BigInt!
+  price: BigDecimal!
+  decimals:  Int!
+}

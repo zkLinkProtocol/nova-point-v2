@@ -23,3 +23,26 @@ dataSources:
       eventHandlers:
         - event: Staked(indexed address,indexed uint256,uint256)
           handler: handleStaked
+
+  - kind: ethereum/contract
+    name: ActionExecutor
+    network: zklink-nova
+    source:
+      address: '0x5c8F53c3647a06c88416EF0BD8e2bfBaa1e5dEeE'
+      abi: ActionExecutor
+      startBlock: 818707
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/mapping.ts
+      entities:
+        - TransferEvent
+      abis:
+        - name: ActionExecutor
+          file: ./abis/ActionExecutor.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: TargetProcessed(indexed uint256,indexed address,uint256,address,address,uint256,uint256)
+          handler: handleActionTarget

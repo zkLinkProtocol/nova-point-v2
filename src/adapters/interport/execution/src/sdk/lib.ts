@@ -1,4 +1,11 @@
-import { Call, MulticallResult, Response, StakeData, UserTVLData } from './types';
+import {
+  Call,
+  MulticallResult,
+  Response,
+  StakeData,
+  UserStakes, UserTransfers, UserTransfersData,
+  UserTVLData,
+} from './types';
 import { Contract, FallbackProvider } from 'ethers'
 import { createFallbackProvider } from './utils/provider';
 import {
@@ -16,7 +23,7 @@ const SUBGRAPH_ENDPOINT = process.env.SUBGRAPH_ENDPOINT as string;
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const fetchGraphQLData = async (query: string): Promise<Response> => {
+const fetchGraphQLData = async <T>(query: string): Promise<Response<T>> => {
   let response;
   let data;
   let retry = true;
@@ -77,7 +84,7 @@ async function querySubgraphUpToBlock(blockNumber: number): Promise<StakeData[]>
           }
       }`;
 
-    const data = await fetchGraphQLData(query);
+    const data = await fetchGraphQLData<UserStakes>(query);
     const stakes = data.data.userStakes || [];
 
     allStakes = allStakes.concat(stakes);
@@ -139,4 +146,44 @@ export async function getUserPositionsAtBlock(blockNumber: number): Promise<User
   }
 
   return results;
+}
+
+async function queryTransactions(startBlock: number, endBlock: number): Promise<UserTransfersData[]> {
+  let allTransfers: UserTransfersData[] = [];
+  let skip = 0;
+  let fetchMore = true;
+  const first = 1000;
+
+  while (fetchMore) {
+    const query = `
+      query {
+          transferEvents(first: ${first}, skip: ${skip}, where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}) {
+                  userAddress
+                  blockNumber
+                  contractAddress
+                  id
+                  nonce
+                  price
+                  quantity
+                  timestamp
+                  tokenAddress
+                  txHash,
+                  decimals
+          }
+      }`;
+
+    const data = await fetchGraphQLData<UserTransfers>(query);
+
+    const transfers = data.data.transferEvents || [];
+
+    allTransfers = allTransfers.concat(transfers);
+    fetchMore = transfers.length === first;
+    skip += first;
+  }
+
+  return allTransfers
+}
+
+export async function getUserTransactionsData(startBlock: number, endBlock: number): Promise<UserTransfersData[]> {
+  return await queryTransactions(startBlock, endBlock);
 }
