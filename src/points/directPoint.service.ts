@@ -197,7 +197,7 @@ export class DirectPointService extends Worker {
       addressHoldPoints = null;
       page++;
     }
-    console.log(`totalTvlUsd:`, totalTvlUsd.toString());
+    this.logger.log(`blockNumber:${currentStatisticalBlock.number}, totalTvlUsd:${totalTvlUsd.toString()}`);
     await this.cacheRepository.setValue(HOLDING_TVL_USD, totalTvlUsd.toString());
 
     await this.directHoldProcessingStatusRepository.upsertStatus({
