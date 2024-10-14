@@ -8,6 +8,7 @@ import { BridgeActiveService } from "./points/bridgeActive.service";
 import { GenAdapterDataService } from "./points/genAdapterData.service";
 import { CalTvlPointService } from "./points/calTvlPoint.service";
 import { CalTxPointService } from "./points/calTxPoint.service";
+import { CalApiPointService } from './points/calApiPoint.service'
 import { RedistributePointService } from "./points/redistributePoint.service";
 import { BaseDataService } from "./points/baseData.service";
 import { ReferralPointService } from "./points/referralPoints.service";
@@ -27,6 +28,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     private readonly genAdapterDataService: GenAdapterDataService,
     private readonly calTvlPointService: CalTvlPointService,
     private readonly calTxPointService: CalTxPointService,
+    private readonly calApiPointService: CalApiPointService,
     private readonly redistributePointService: RedistributePointService,
     private readonly referralPointService: ReferralPointService,
     private readonly seasonTotalPointService: SeasonTotalPointService,
@@ -61,6 +63,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
   private startWorkers() {
     return Promise.all([
+      this.calApiPointService.start(),
       this.baseDataService.start(),
       this.bridgeActiveService.start(),
       this.bridgePointService.start(),
@@ -85,5 +88,5 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     ]);
   }
 
-  private async compensatePoints() {}
+  private async compensatePoints() { }
 }
