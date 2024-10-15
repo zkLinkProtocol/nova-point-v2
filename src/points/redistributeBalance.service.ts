@@ -57,10 +57,9 @@ export class RedistributeBalanceService extends Worker {
     if (curBlockNumber) {
       await this.runCommandsInAllDirectories(curBlockNumber);
     } else {
-      // const currentBlock = await this.blockRepository.getLastBlock({
-      //   select: { number: true, timestamp: true },
-      // })
-      const currentBlock = { number: 6287673, timestamp: 1727842556 }
+      const currentBlock = await this.blockRepository.getLastBlock({
+        select: { number: true, timestamp: true },
+      })
       this.logger.log(`RedistributeBalanceService start at ${currentBlock.number}`)
       await this.runCommandsInAllDirectories(currentBlock.number);
       this.logger.log(`RedistributeBalanceService end at ${currentBlock.number}`)
