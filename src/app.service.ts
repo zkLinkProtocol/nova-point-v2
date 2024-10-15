@@ -63,13 +63,13 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
   private startWorkers() {
     return Promise.all([
-      this.calApiPointService.start(),
       this.baseDataService.start(),
       this.bridgeActiveService.start(),
       this.bridgePointService.start(),
       this.genAdapterDataService.start(),
       this.calTvlPointService.start(),
       this.calTxPointService.start(),
+      this.calApiPointService.start(),
       this.seasonTotalPointService.start(),
       this.directPointService.start(),
     ]);
@@ -77,12 +77,14 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
   private stopWorkers() {
     return Promise.all([
+      this.calApiPointService.stop(),
       this.baseDataService.stop(),
       this.bridgeActiveService.stop(),
       this.bridgePointService.stop(),
       this.genAdapterDataService.stop(),
       this.calTvlPointService.stop(),
       this.calTxPointService.stop(),
+      this.calApiPointService.stop(),
       this.seasonTotalPointService.stop(),
       this.directPointService.stop(),
     ]);
