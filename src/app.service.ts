@@ -77,7 +77,6 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
 
   private stopWorkers() {
     return Promise.all([
-      this.calApiPointService.stop(),
       this.baseDataService.stop(),
       this.bridgeActiveService.stop(),
       this.bridgePointService.stop(),
