@@ -93,6 +93,7 @@ import { RedistributeBalanceService } from "./points/redistributeBalance.service
 import { DirectPointService } from "./points/directPoint.service";
 import { UpdatePointStatusService } from "./points/updatePointStatus.service";
 import { CalTvlPointService } from "./points/calTvlPoint.service";
+import { CalApiPointService } from './points/calApiPoint.service'
 import { CalTxPointService } from "./points/calTxPoint.service";
 import { ProtocolDau } from "./entities/dau.entity";
 import { StatisticService } from "./points/statistic.service";
@@ -231,6 +232,7 @@ import { StatisticService } from "./points/statistic.service";
     ReferralPointsRepository,
     TvlProcessingRepository,
     TxProcessingRepository,
+    CalApiPointService,
     CalTvlPointService,
     CalTxPointService,
     SeasonTotalPointRepository,
@@ -242,4 +244,4 @@ import { StatisticService } from "./points/statistic.service";
     DirectHoldProcessingStatusRepository,
   ],
 })
-export class AppModule {}
+export class AppModule { }
