@@ -50,6 +50,21 @@ export class PointsOfLpRepository extends BaseRepository<PointsOfLp> {
     });
   }
 
+  public async getPointByPairAddresses(pairAddresses: string[]): Promise<PointsOfLp[]> {
+    const transactionManager = this.unitOfWork.getTransactionManager();
+    const pairAddressesBuff = pairAddresses.map((item) => Buffer.from(item.substring(2), "hex"));
+    const res = await transactionManager.query(
+      `SELECT address, "pairAddress", "stakePoint" FROM "pointsOfLp" WHERE "pairAddress" = ANY($1)`,
+      [pairAddressesBuff]
+    );
+    return res.map((row: any) => {
+      row.address = "0x" + row.address.toString("hex");
+      row.pairAddress = "0x" + row.pairAddress.toString("hex");
+      row.stakePoint = isFinite(Number(row.stakePoint)) ? Number(row.stakePoint) : 0;
+      return row;
+    });
+  }
+
   public async getPointByAddresses(addresses: string[]): Promise<PointsOfLp[]> {
     const transactionManager = this.unitOfWork.getTransactionManager();
     const addressesBuff = addresses.map((item) => Buffer.from(item.substring(2), "hex"));
@@ -65,21 +80,24 @@ export class PointsOfLpRepository extends BaseRepository<PointsOfLp> {
   }
 
   /**
-   * 
+   *
    * @param addresses user addresses
    * @returns a Map which key is userAddress.toLowerCase()_pairAddress.toLowerCase()
    */
   public async getPointMapForAddresses(addresses: string[]) {
     const transactionManager = this.unitOfWork.getTransactionManager();
     const addressesBuff = addresses.map((item) => Buffer.from(item.substring(2), "hex"));
-    const result = await transactionManager.getRepository(PointsOfLp)
+    const result = await transactionManager
+      .getRepository(PointsOfLp)
       .createQueryBuilder("p")
       .where("p.address = ANY(:addresses)", { addresses: addressesBuff })
       .getMany();
 
-    return new Map(result.map((row) => {
-      return [`${row.address.toLowerCase()}-${row.pairAddress.toLowerCase()}`, row];
-    }));
+    return new Map(
+      result.map((row) => {
+        return [`${row.address.toLowerCase()}-${row.pairAddress.toLowerCase()}`, row];
+      })
+    );
   }
 
   public createDefaultPoint(address: string, pairAddress: string): PointsOfLp {

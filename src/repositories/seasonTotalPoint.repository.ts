@@ -24,6 +24,24 @@ export class SeasonTotalPointRepository extends BaseRepository<SeasonTotalPoint>
     });
   }
 
+  public async getTotalLastSeasonPointByPairAddresses(
+    pairAddresses: string[],
+    currentSeason: number
+  ): Promise<SeasonTotalPoint[]> {
+    const transactionManager = this.unitOfWork.getTransactionManager();
+    const pairAddressesBuff = pairAddresses.map((item) => Buffer.from(item.substring(2), "hex"));
+    const result = await transactionManager.query(
+      `SELECT "userAddress","pairAddress", SUM(point) AS "totalPoint" FROM public."seasonTotalPoint" WHERE "pairAddress" = ANY($1) AND season<${currentSeason} GROUP BY "userAddress","pairAddress";`,
+      [pairAddressesBuff]
+    );
+    return result.map((row: any) => {
+      row.userAddress = "0x" + row.userAddress.toString("hex");
+      row.pairAddress = "0x" + row.pairAddress.toString("hex");
+      row.point = isFinite(Number(row.totalPoint)) ? Number(row.totalPoint) : 0;
+      return row;
+    });
+  }
+
   public async deleteBySeason(season: number): Promise<void> {
     const transactionManager = this.unitOfWork.getTransactionManager();
     await transactionManager.query(`DELETE FROM public."seasonTotalPoint" WHERE season=${season} AND type != 'other';`);
