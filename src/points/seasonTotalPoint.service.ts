@@ -9,6 +9,8 @@ import {
   SeasonTotalPointRepository,
   ReferralPointsRepository,
   SupplementPointRepository,
+  PointsOfLpRepository,
+  ProjectRepository,
 } from "../repositories";
 import { ConfigService } from "@nestjs/config";
 import seasonConfig from "../config/season";
@@ -25,6 +27,8 @@ interface seasonTotalPoint {
   type: string;
 }
 
+const BULLISHS = "bullishs";
+
 @Injectable()
 export class SeasonTotalPointService extends Worker {
   private readonly logger: Logger;
@@ -34,9 +38,11 @@ export class SeasonTotalPointService extends Worker {
     private readonly blockAddressPointOfLpRepository: BlockAddressPointOfLpRepository,
     private readonly blockAddressPointRepository: BlockAddressPointRepository,
     private readonly invitesRepository: InvitesRepository,
+    private readonly pointsOfLpRepository: PointsOfLpRepository,
     private readonly seasonTotalPointRepository: SeasonTotalPointRepository,
     private readonly otherPointRepository: OtherPointRepository,
     private readonly supplementPointRepository: SupplementPointRepository,
+    private readonly projectRepository: ProjectRepository,
     private readonly projectTvlService: ProjectTvlService,
     private readonly lrtUnitwork: LrtUnitOfWork,
     private readonly configService: ConfigService
@@ -112,8 +118,11 @@ export class SeasonTotalPointService extends Worker {
       this.logger.log("No season time");
       return;
     }
-    const { startTime, endTime } = seasonTime;
-    const allPointList = await this.getOtherPoint(startTime, endTime);
+    const { startTime, endTime, season } = seasonTime;
+    const otherPointList = await this.getOtherPoint(startTime, endTime);
+    const bullishsPointList = await this.getAllAddressBullishsPoints(season);
+    const allPointList = otherPointList.concat(bullishsPointList);
+
     const userAddresses = [...new Set(allPointList.map((item) => item.userAddress))];
     const usernameMap = await this.getUsername(userAddresses);
     const data: SeasonTotalPoint[] = [];
@@ -235,6 +244,51 @@ export class SeasonTotalPointService extends Worker {
       });
     }
     return otherPointList;
+  }
+
+  private async getAllAddressBullishsPoints(season: number): Promise<seasonTotalPoint[]> {
+    const bullishsPointList = [];
+    const projects = await this.projectRepository.find({ where: { name: BULLISHS } });
+    if (!projects) {
+      return bullishsPointList;
+    }
+    const pairAddresses = [];
+    for (const item of projects) {
+      pairAddresses.push(item.pairAddress);
+    }
+    if (pairAddresses.length === 0) {
+      return bullishsPointList;
+    }
+
+    const totalLastSeasonRes =
+      season > 4
+        ? await this.seasonTotalPointRepository.getTotalLastSeasonPointByPairAddresses(pairAddresses, season)
+        : [];
+    const totalLastSeasonPointsMap = new Map();
+    for (const item of totalLastSeasonRes) {
+      totalLastSeasonPointsMap.set(`${item.userAddress}_${item.pairAddress}`, item.point);
+    }
+
+    const currentSeasonRes = await this.pointsOfLpRepository.getPointByPairAddresses(pairAddresses);
+    for (const item of currentSeasonRes) {
+      const key = `${item.address}_${item.pairAddress}`;
+      const totalLastSeasonPoint = totalLastSeasonPointsMap.get(key) || 0;
+      const totalCurrentSeasonPoints = item.stakePoint;
+      const currentSeasonPoints = totalCurrentSeasonPoints - totalLastSeasonPoint;
+      if (currentSeasonPoints < 0) {
+        this.logger.error(
+          `bullishs point less than 0, address: ${item.address}, pairAddress: ${item.pairAddress}, currentSeason: ${season}, totalLastSeasonPoint: ${totalLastSeasonPoint}, totalCurrentSeasonPoints: ${totalCurrentSeasonPoints}`
+        );
+        continue;
+      }
+      bullishsPointList.push({
+        userAddress: item.address,
+        pairAddress: item.pairAddress,
+        point: currentSeasonPoints,
+        type: "txNum",
+      });
+    }
+    return bullishsPointList;
   }
 
   private async getUsername(userAddresses: string[]): Promise<Map<string, string>> {
