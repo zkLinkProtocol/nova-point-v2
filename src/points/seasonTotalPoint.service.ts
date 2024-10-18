@@ -120,7 +120,7 @@ export class SeasonTotalPointService extends Worker {
     }
     const { startTime, endTime, season } = seasonTime;
     const otherPointList = await this.getOtherPoint(startTime, endTime);
-    const bullishsPointList = await this.getAllAddressBullishsPoinst(season);
+    const bullishsPointList = await this.getAllAddressBullishsPoints(season);
     const allPointList = otherPointList.concat(bullishsPointList);
 
     const userAddresses = [...new Set(allPointList.map((item) => item.userAddress))];
@@ -246,7 +246,7 @@ export class SeasonTotalPointService extends Worker {
     return otherPointList;
   }
 
-  private async getAllAddressBullishsPoinst(season: number): Promise<seasonTotalPoint[]> {
+  private async getAllAddressBullishsPoints(season: number): Promise<seasonTotalPoint[]> {
     const bullishsPointList = [];
     const projects = await this.projectRepository.find({ where: { name: BULLISHS } });
     if (!projects) {
@@ -276,7 +276,7 @@ export class SeasonTotalPointService extends Worker {
       const totalCurrentSeasonPoints = item.stakePoint;
       const currentSeasonPoints = totalCurrentSeasonPoints - totalLastSeasonPoint;
       if (currentSeasonPoints < 0) {
-        this.logger.log(
+        this.logger.error(
           `bullishs point less than 0, address: ${item.address}, pairAddress: ${item.pairAddress}, currentSeason: ${season}, totalLastSeasonPoint: ${totalLastSeasonPoint}, totalCurrentSeasonPoints: ${totalCurrentSeasonPoints}`
         );
         continue;
