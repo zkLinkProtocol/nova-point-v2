@@ -88,7 +88,7 @@ export class GenAdapterDataService extends Worker {
 
   private async getAllDirectories(): Promise<string[]> {
     const files = await promisesFs.readdir(this.adaptersPath, { withFileTypes: true });
-    return files.filter(dir => dir.isDirectory() && dir.name !== 'example').map((dirent) => dirent.name);;
+    return files.filter(dir => dir.isDirectory() && !['example', 'logx'].includes(dir.name)).map((dirent) => dirent.name);;
   }
 
   public async initAllDirectory(): Promise<void> {
