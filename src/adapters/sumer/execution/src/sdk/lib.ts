@@ -43,7 +43,10 @@ const getAllUserPosition = async (blockNumber: number) => {
       const userAddress = data.account.id;
       const cTokenBalance = data.cTokenBalance;
       const { id, underlyingAddress, decimals, totalSupply, cash } = data.market;
-      const balance = new BigNumber(cTokenBalance).div(totalSupply).times(cash).times(`1e${decimals}`).toFixed(0)
+      const balance =
+        totalSupply !== "0"
+          ? new BigNumber(cTokenBalance).div(totalSupply).times(cash).times(`1e${decimals}`).toFixed(0)
+          : "0";
 
       return {
         userAddress,
