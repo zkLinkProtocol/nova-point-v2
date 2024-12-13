@@ -23,8 +23,8 @@ export default [
   {
     season: 4, // epoch3
     startTime: "2024-08-31 21:00:00",
-    endTime: "2029-08-31 21:00:00",
+    endTime: "2024-12-13 18:00:00",
     startBlockNumber: 5727190,
-    endBlockNumber: 999999999,
+    endBlockNumber: 7335703,
   },
 ];
